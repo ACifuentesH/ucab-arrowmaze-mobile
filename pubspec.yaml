@@ -1,0 +1,29 @@
+name: arrow_maze
+description: "Arrow Maze - Escape Puzzle. UCAB mobile client (MVVM + Clean Architecture)."
+publish_to: 'none'
+
+version: 0.2.0+1
+
+environment:
+  sdk: ^3.12.2
+
+dependencies:
+  flutter:
+    sdk: flutter
+  flutter_riverpod: ^2.5.1
+  audioplayers: ^6.0.0
+  shared_preferences: ^2.3.4
+  http: ^1.2.2
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_lints: ^5.0.0
+  mocktail: ^1.0.4
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/levels/
+    - assets/audio/
+    - assets/prompts/

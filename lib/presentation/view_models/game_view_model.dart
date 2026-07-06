@@ -1,0 +1,175 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:arrow_maze/domain/aggregates/board.dart';
+import 'package:arrow_maze/domain/events/domain_events.dart';
+import 'package:arrow_maze/domain/ports/i_time_service.dart';
+import 'package:arrow_maze/domain/value_objects/level_id.dart';
+import 'package:arrow_maze/application/enums/sound_effect.dart';
+import 'package:arrow_maze/application/ports/i_audio_service.dart';
+import 'package:arrow_maze/application/use_cases/load_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/i_remove_arrow_use_case.dart';
+import 'package:arrow_maze/application/use_cases/restart_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
+import 'package:arrow_maze/presentation/view_models/game_state.dart';
+
+/// Gestor de estado (Observer pattern): conecta casos de uso con la UI.
+/// Observa los DomainEvents del Board para disparar audio y controlar el reloj.
+class GameViewModel extends StateNotifier<GameState> {
+  final LoadLevelUseCase _loadLevel;
+  final IRemoveArrowUseCase _removeArrow;
+  final RestartLevelUseCase _restart;
+  final UndoMoveUseCase _undo;
+  final ITimeService _timeService;
+  final IAudioService _audioService;
+
+  StreamSubscription<int>? _timeSub;
+
+  GameViewModel({
+    required LoadLevelUseCase loadLevel,
+    required IRemoveArrowUseCase removeArrow,
+    required RestartLevelUseCase restart,
+    required UndoMoveUseCase undo,
+    required ITimeService timeService,
+    required IAudioService audioService,
+  })  : _loadLevel = loadLevel,
+        _removeArrow = removeArrow,
+        _restart = restart,
+        _undo = undo,
+        _timeService = timeService,
+        _audioService = audioService,
+        super(const GameState.initial());
+
+  Future<void> loadLevel(String levelId) async {
+    _stopTimer();
+    state = state.copyWith(isLoading: true, clearError: true);
+    try {
+      final board = await _loadLevel.execute(LevelId(levelId));
+      state = state.copyWith(
+        board: board,
+        currentLevelId: LevelId(levelId),
+        isLoading: false,
+        elapsedSeconds: 0,
+        clearBlocked: true,
+        clearEscaping: true,
+      );
+      _startTimer();
+      await _audioService.playMusic();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// Toca la flecha [arrowId]. La UI obtiene el arrowId via hit-test del Board.
+  bool tapArrow(String arrowId) {
+    final board = state.board;
+    if (board == null) return false;
+
+    final arrowSnapshot = board.arrowById(arrowId);
+    final valid = _removeArrow.execute(board, arrowId);
+
+    if (valid) {
+      state = state.copyWith(
+        board: board,
+        escapingArrow: arrowSnapshot,
+        clearBlocked: true,
+      );
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) state = state.copyWith(clearEscaping: true);
+      });
+    } else {
+      state = state.copyWith(
+        board: board,
+        lastBlockedArrowId: arrowId,
+      );
+      Future.delayed(const Duration(milliseconds: 450), () {
+        if (mounted) state = state.copyWith(clearBlocked: true);
+      });
+    }
+
+    // Observer: procesa los DomainEvents emitidos por Board → dispara audio.
+    _processEvents(board);
+    return valid;
+  }
+
+  Future<void> restart() async {
+    _stopTimer();
+    final id = state.currentLevelId;
+    if (id == null) return;
+    state = state.copyWith(
+        isLoading: true, clearBlocked: true, clearEscaping: true);
+    try {
+      final board = await _restart.execute(id);
+      state = state.copyWith(board: board, isLoading: false, elapsedSeconds: 0);
+      _startTimer();
+      await _audioService.playMusic();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  void undo() {
+    final board = state.board;
+    if (board == null) return;
+    _undo.execute();
+    state = state.copyWith(board: board, clearBlocked: true, clearEscaping: true);
+  }
+
+  void toggleMute() {
+    _audioService.toggleMute();
+    state = state.copyWith(isMuted: _audioService.isMuted);
+  }
+
+  @override
+  void dispose() {
+    _timeSub?.cancel();
+    _timeService.stop();
+    super.dispose();
+  }
+
+  // ── Timer ─────────────────────────────────────────────────────────────────
+
+  void _startTimer() {
+    _timeSub?.cancel();
+    _timeService.reset();
+    _timeService.start();
+    _timeSub = _timeService.elapsed.listen(_onTick);
+  }
+
+  void _stopTimer() {
+    _timeSub?.cancel();
+    _timeSub = null;
+    _timeService.stop();
+    _timeService.reset();
+  }
+
+  void _onTick(int seconds) {
+    if (!mounted) return;
+    final board = state.board;
+    if (board == null) return;
+    board.applyTimeTick(seconds);
+    _processEvents(board);
+    if (mounted) state = state.copyWith(elapsedSeconds: seconds);
+  }
+
+  // ── Observer: DomainEvents → audio ────────────────────────────────────────
+
+  void _processEvents(Board board) {
+    for (final event in board.pullEvents()) {
+      if (event is ArrowEscaped) {
+        _audioService.playSfx(SoundEffect.arrowEscaped);
+      } else if (event is MoveBlocked) {
+        _audioService.playSfx(SoundEffect.moveBlocked);
+      } else if (event is LevelCleared) {
+        _audioService.playSfx(SoundEffect.levelCleared);
+        _audioService.stopMusic();
+        _stopTimer();
+      } else if (event is GameOver) {
+        _audioService.playSfx(SoundEffect.gameOver);
+        _audioService.stopMusic();
+        _stopTimer();
+      }
+    }
+  }
+}
