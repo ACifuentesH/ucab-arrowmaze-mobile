@@ -1,14 +1,17 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:arrow_maze/application/builders/level_builder.dart';
 import 'package:arrow_maze/application/commands/command_invoker.dart';
 import 'package:arrow_maze/application/dtos/level_preview.dart';
+import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
 import 'package:arrow_maze/application/ports/i_generated_level_repository.dart';
 import 'package:arrow_maze/application/ports/i_level_catalog_service.dart';
 import 'package:arrow_maze/application/ports/i_level_generator_service.dart';
 import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
+import 'package:arrow_maze/application/ports/i_token_storage.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/get_level_catalog_use_case.dart';
@@ -18,8 +21,15 @@ import 'package:arrow_maze/application/use_cases/remove_arrow_use_case.dart';
 import 'package:arrow_maze/application/use_cases/restart_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/save_progress_use_case.dart';
 import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/application/use_cases/leaderboard/get_leaderboard_use_case.dart';
+import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
+import 'package:arrow_maze/config/api_config.dart';
 import 'package:arrow_maze/domain/ports/i_level_repository.dart';
 import 'package:arrow_maze/domain/ports/i_time_service.dart';
+import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
 import 'package:arrow_maze/infrastructure/catalog/asset_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/composite_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/generated_level_catalog_service.dart';
@@ -28,6 +38,7 @@ import 'package:arrow_maze/infrastructure/repositories/composite_level_repositor
 import 'package:arrow_maze/infrastructure/repositories/generated_json_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_generated_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progress_repository.dart';
+import 'package:arrow_maze/infrastructure/repositories/shared_prefs_token_storage.dart';
 import 'package:arrow_maze/infrastructure/services/audio_service.dart';
 import 'package:arrow_maze/infrastructure/services/groq_level_generator_service.dart';
 import 'package:arrow_maze/infrastructure/services/stopwatch_time_service.dart';
@@ -154,6 +165,45 @@ final getLevelCatalogUseCaseProvider =
 final generateLevelViewModelProvider =
     StateNotifierProvider<GenerateLevelViewModel, GenerateLevelState>(
   (ref) => GenerateLevelViewModel(ref.read(generateLevelUseCaseProvider)),
+);
+
+// ── Infraestructura: apiClient (puerto en application, adapter http) ─────────
+
+final httpClientProvider = Provider<http.Client>((_) => http.Client());
+
+final tokenStorageProvider = Provider<ITokenStorage>(
+  (ref) => SharedPrefsTokenStorage(ref.read(sharedPreferencesProvider)),
+);
+
+final apiClientProvider = Provider<IApiClient>(
+  (ref) => HttpApiClient(
+    httpClient: ref.read(httpClientProvider),
+    tokenStorage: ref.read(tokenStorageProvider),
+    baseUrl: ApiConfig.baseUrl,
+  ),
+);
+
+// ── Aplicación: casos de uso remotos (stubs para feature/auth y
+//    feature/leaderboard — ver división de trabajo) ──────────────────────────
+
+final loginUseCaseProvider = Provider<LoginUseCase>(
+  (ref) => LoginUseCase(api: ref.read(apiClientProvider)),
+);
+
+final registerUseCaseProvider = Provider<RegisterUseCase>(
+  (ref) => RegisterUseCase(api: ref.read(apiClientProvider)),
+);
+
+final logoutUseCaseProvider = Provider<LogoutUseCase>(
+  (ref) => LogoutUseCase(api: ref.read(apiClientProvider)),
+);
+
+final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
+  (ref) => GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
+);
+
+final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
+  (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
 
 // ── GameViewModel ─────────────────────────────────────────────────────────
