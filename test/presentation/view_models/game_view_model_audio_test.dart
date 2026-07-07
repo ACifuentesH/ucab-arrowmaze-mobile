@@ -45,14 +45,15 @@ void main() {
       time = _FakeTimeService();
     });
 
-    test('playMusic se llama al cargar un nivel', () async {
+    test('should_play_music_when_a_level_is_loaded', () async {
       final ctrl = makeCtrl(_singleArrowBoard());
       await ctrl.loadLevel('test');
       expect(audio.playMusicCount, 1);
       ctrl.dispose();
     });
 
-    test('playSfx(arrowEscaped) al sacar una flecha exitosamente', () async {
+    test('should_play_arrow_escaped_sfx_when_an_arrow_leaves_the_board',
+        () async {
       // Tablero 2 flechas sin dependencias: a1 escapa, a2 sigue en tablero.
       final ctrl = makeCtrl(_twoIndependentArrowsBoard());
       await ctrl.loadLevel('test');
@@ -65,7 +66,7 @@ void main() {
       ctrl.dispose();
     });
 
-    test('playSfx(moveBlocked) al intentar mover una flecha bloqueada', () async {
+    test('should_play_move_blocked_sfx_when_an_arrow_is_blocked', () async {
       // Tablero 1×2: a1(r0c0 East) bloqueada por a2(r0c1).
       final ctrl = makeCtrl(_blockedArrowBoard());
       await ctrl.loadLevel('test');
@@ -77,7 +78,8 @@ void main() {
       ctrl.dispose();
     });
 
-    test('playSfx(levelCleared) y stopMusic al vaciar el tablero', () async {
+    test('should_celebrate_and_stop_music_when_the_board_is_emptied',
+        () async {
       final ctrl = makeCtrl(_singleArrowBoard());
       await ctrl.loadLevel('test');
       audio.clear();
@@ -90,7 +92,7 @@ void main() {
       ctrl.dispose();
     });
 
-    test('toggleMute actualiza isMuted en el estado', () async {
+    test('should_toggle_the_muted_flag_when_mute_is_toggled', () async {
       final ctrl = makeCtrl(_singleArrowBoard());
       await ctrl.loadLevel('test');
       expect(ctrl.state.isMuted, isFalse);

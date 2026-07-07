@@ -1,58 +1,43 @@
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:arrow_maze/domain/aggregates/board.dart';
-import 'package:arrow_maze/domain/events/domain_events.dart';
-import 'package:arrow_maze/domain/game_status.dart';
-import 'package:arrow_maze/domain/services/adjacency_board_graph.dart';
-import 'package:arrow_maze/domain/value_objects/level_id.dart';
+import '../../_support/apis/board_time_test_api.dart';
 
 void main() {
-  group('Board.applyTimeTick', () {
-    Board makeBoard({int? limit}) => Board(
-          levelId: LevelId('test'),
-          boundingRows: 0,
-          boundingCols: 0,
-          graph: AdjacencyBoardGraph([]),
-          arrows: {},
-          occupancy: {},
-          timeLimitSeconds: limit,
-        );
-
-    test('sin límite nunca emite GameOver', () {
-      final b = makeBoard();
-      b.applyTimeTick(999);
-      expect(b.pullEvents(), isEmpty);
-      expect(b.status, GameStatus.playing);
+  group('Board — límite de tiempo (applyTimeTick)', () {
+    test('should_keep_playing_when_time_is_below_the_limit', () {
+      BoardTimeTestApi()
+          .givenABoardWithTimeLimit(seconds: 10)
+          .whenTimeAdvancesTo(9)
+          .thenGameShouldStillBePlaying();
     });
 
-    test('no emite GameOver antes de alcanzar el límite', () {
-      final b = makeBoard(limit: 10);
-      b.applyTimeTick(9);
-      expect(b.pullEvents(), isEmpty);
-      expect(b.status, GameStatus.playing);
+    test('should_end_game_when_time_reaches_the_limit', () {
+      BoardTimeTestApi()
+          .givenABoardWithTimeLimit(seconds: 10)
+          .whenTimeAdvancesTo(10)
+          .thenGameShouldBeOver();
     });
 
-    test('emite GameOver al alcanzar exactamente el límite', () {
-      final b = makeBoard(limit: 10);
-      b.applyTimeTick(10);
-      final events = b.pullEvents();
-      expect(events.whereType<GameOver>(), hasLength(1));
-      expect(b.status, GameStatus.gameOver);
+    test('should_end_game_when_time_exceeds_the_limit', () {
+      BoardTimeTestApi()
+          .givenABoardWithTimeLimit(seconds: 10)
+          .whenTimeAdvancesTo(15)
+          .thenGameShouldBeOver();
     });
 
-    test('emite GameOver al superar el límite', () {
-      final b = makeBoard(limit: 10);
-      b.applyTimeTick(15);
-      expect(b.pullEvents().whereType<GameOver>(), hasLength(1));
-      expect(b.status, GameStatus.gameOver);
+    test('should_not_emit_further_events_when_game_is_already_over', () {
+      BoardTimeTestApi()
+          .givenABoardWithTimeLimit(seconds: 10)
+          .whenTimeAdvancesTo(10)
+          .whenTimeAdvancesTo(11)
+          .thenNoFurtherEventsShouldBeEmitted();
     });
 
-    test('no emite segundo GameOver si ya está en gameOver', () {
-      final b = makeBoard(limit: 10);
-      b.applyTimeTick(10);
-      b.pullEvents(); // consume primer evento
-      b.applyTimeTick(11);
-      expect(b.pullEvents(), isEmpty);
+    test('should_ignore_elapsed_time_when_board_has_no_limit', () {
+      BoardTimeTestApi()
+          .givenABoardWithoutTimeLimit()
+          .whenTimeAdvancesTo(999)
+          .thenGameShouldStillBePlaying();
     });
   });
 }
