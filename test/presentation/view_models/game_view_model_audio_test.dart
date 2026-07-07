@@ -5,6 +5,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:arrow_maze/application/commands/command_invoker.dart';
 import 'package:arrow_maze/application/enums/sound_effect.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
+import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/load_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/remove_arrow_use_case.dart';
 import 'package:arrow_maze/application/use_cases/restart_level_use_case.dart';
@@ -22,6 +23,8 @@ import 'package:arrow_maze/domain/value_objects/level_id.dart';
 import 'package:arrow_maze/domain/value_objects/lives.dart';
 import 'package:arrow_maze/presentation/view_models/game_view_model.dart';
 
+import '../../_support/fakes/fake_player_progress_repository.dart';
+
 void main() {
   group('GameViewModel – integración audio (Observer: eventos → sfx)', () {
     late _FakeAudio audio;
@@ -35,6 +38,9 @@ void main() {
         removeArrow: RemoveArrowUseCase(invoker: invoker),
         restart: RestartLevelUseCase(repository: repo, invoker: invoker),
         undo: UndoMoveUseCase(invoker: invoker),
+        completeLevel: CompleteLevelUseCase(
+          repository: FakePlayerProgressRepository(),
+        ),
         timeService: time,
         audioService: audio,
       );
