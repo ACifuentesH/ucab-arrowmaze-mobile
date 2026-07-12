@@ -37,6 +37,7 @@ class ArrowMazeApp extends StatelessWidget {
           surface: _t.boardBackground,
         ),
         scaffoldBackgroundColor: _t.background,
+        fontFamily: 'Outfit',
         useMaterial3: true,
       ),
       home: const HomeScreen(),

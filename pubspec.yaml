@@ -27,3 +27,7 @@ flutter:
     - assets/levels/
     - assets/audio/
     - assets/prompts/
+  fonts:
+    - family: Outfit
+      fonts:
+        - asset: assets/fonts/Outfit/Outfit-Variable.ttf
