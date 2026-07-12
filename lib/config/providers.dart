@@ -44,6 +44,7 @@ import 'package:arrow_maze/infrastructure/services/groq_level_generator_service.
 import 'package:arrow_maze/infrastructure/services/stopwatch_time_service.dart';
 import 'package:arrow_maze/presentation/view_models/game_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/game_state.dart';
+import 'package:arrow_maze/presentation/view_models/auth/auth_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
 
@@ -196,6 +197,15 @@ final registerUseCaseProvider = Provider<RegisterUseCase>(
 
 final logoutUseCaseProvider = Provider<LogoutUseCase>(
   (ref) => LogoutUseCase(api: ref.read(apiClientProvider)),
+);
+
+final authViewModelProvider =
+    StateNotifierProvider<AuthViewModel, AuthState>(
+  (ref) => AuthViewModel(
+    login: ref.read(loginUseCaseProvider),
+    register: ref.read(registerUseCaseProvider),
+    logout: ref.read(logoutUseCaseProvider),
+  ),
 );
 
 final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/level_select_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 
 /// Pantalla de inicio: título del juego y botón de entrada.
 class HomeScreen extends StatelessWidget {
@@ -68,6 +69,24 @@ class HomeScreen extends StatelessWidget {
                 ),
                 icon: const Icon(Icons.auto_awesome, size: 18),
                 label: const Text('AI LEVEL BUILDER'),
+              ),
+
+              const SizedBox(height: 16),
+              TextButton(
+                onPressed: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                      builder: (_) => const LoginScreen()),
+                ),
+                child: Text(
+                  'INICIAR SESIÓN',
+                  style: TextStyle(
+                    color: _t.primary,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 1.2,
+                  ),
+                ),
               ),
             ],
           ),
