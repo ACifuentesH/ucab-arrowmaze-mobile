@@ -66,12 +66,12 @@ class BoardPainter extends CustomPainter {
   // ── background & dots ────────────────────────────────────────────────────────
 
   void _drawBackground(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF16213E));
+    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF232328));
   }
 
   void _drawDots(Canvas canvas, double cs) {
-    final paint = Paint()..color = const Color(0xFF253556);
-    final r = cs * 0.07; // pequeño para que la flecha lo tape
+    final paint = Paint()..color = const Color(0xFF48454C);
+    final r = cs * 0.09; // pequeño para que la flecha lo tape
     for (final id in existingCells) {
       final rc = _parseId(id.value);
       if (rc == null) continue;

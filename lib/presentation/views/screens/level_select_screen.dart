@@ -227,7 +227,7 @@ class _StarsRow extends StatelessWidget {
           earned ? Icons.star_rounded : Icons.star_outline_rounded,
           size: 16,
           color: earned
-              ? const Color(0xFFFFD166)
+              ? const Color(0xFFFFB238)
               : Colors.white.withValues(alpha: dimmed ? 0.1 : 0.25),
         );
       }),

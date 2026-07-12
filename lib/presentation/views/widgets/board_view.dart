@@ -29,6 +29,7 @@ class BoardView extends StatefulWidget {
 class _BoardViewState extends State<BoardView>
     with TickerProviderStateMixin {
   late final AnimationController _escapeCtrl;
+  late final Animation<double> _escapeAnim;
   late final AnimationController _shakeCtrl;
   late final Animation<double> _shakeAnim;
 
@@ -41,13 +42,14 @@ class _BoardViewState extends State<BoardView>
 
     _escapeCtrl = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: const Duration(milliseconds: 520),
     )..addStatusListener((s) {
         if (s == AnimationStatus.completed) {
           setState(() => _escapingArrowCache = null);
           _escapeCtrl.reset();
         }
       });
+    _escapeAnim = CurvedAnimation(parent: _escapeCtrl, curve: Curves.easeIn);
 
     _shakeCtrl = AnimationController(
       vsync: this,
@@ -130,7 +132,7 @@ class _BoardViewState extends State<BoardView>
                     existingCells: existingCells,
                     arrows: board.arrows,
                     escapingArrow: _escapingArrowCache,
-                    escapeProgress: _escapeCtrl.value,
+                    escapeProgress: _escapeAnim.value,
                     blockedArrowId: _blockedArrowCache,
                     shakeOffsetX: _shakeAnim.value,
                   ),

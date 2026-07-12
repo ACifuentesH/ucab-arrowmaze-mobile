@@ -132,9 +132,9 @@ class _VictoryOverlay extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.white),
             onPressed: onNext,
-            child: const Text('Siguiente nivel',
+            child: Text('Siguiente nivel',
                 style: TextStyle(
-                    color: Color(0xFF00B4D8), fontWeight: FontWeight.bold)),
+                    color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
           ),
           const SizedBox(width: 12),
           OutlinedButton(
@@ -148,9 +148,9 @@ class _VictoryOverlay extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.white),
             onPressed: onBack,
-            child: const Text('Niveles',
+            child: Text('Niveles',
                 style: TextStyle(
-                    color: Color(0xFF00B4D8), fontWeight: FontWeight.bold)),
+                    color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
           ),
       ],
     );
@@ -174,7 +174,7 @@ class _StarsBanner extends StatelessWidget {
             earned ? Icons.star_rounded : Icons.star_outline_rounded,
             size: 44,
             color: earned
-                ? const Color(0xFFFFD166)
+                ? const Color(0xFFFFB238)
                 : Colors.white.withValues(alpha: 0.35),
           ),
         );
@@ -199,8 +199,8 @@ class _DefeatOverlay extends StatelessWidget {
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: Colors.white),
           onPressed: onRetry,
-          child: const Text('Reintentar',
-              style: TextStyle(color: Color(0xFF7B1E3A), fontWeight: FontWeight.bold)),
+          child: Text('Reintentar',
+              style: TextStyle(color: ThemeConfig.dark.defeatOverlay, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 12),
         OutlinedButton(
