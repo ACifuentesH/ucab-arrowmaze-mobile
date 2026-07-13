@@ -17,7 +17,7 @@ class AudioService implements IAudioService {
   final AudioPlayer _music = AudioPlayer();
   bool _isMuted = false;
 
-  static const String _musicPath = 'audio/background.mp3';
+  static const String _musicPath = 'audio/background.wav';
 
   static const Map<SoundEffect, String> _sfxPaths = {
     SoundEffect.arrowEscaped: 'audio/sfx/arrow_escaped.wav',
