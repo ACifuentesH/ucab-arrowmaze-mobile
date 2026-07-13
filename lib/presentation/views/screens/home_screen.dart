@@ -1,12 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:arrow_maze/config/app_router.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
-import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
-import 'package:arrow_maze/presentation/views/screens/level_select_screen.dart';
-import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 
 /// Pantalla de inicio: título del juego y botón de entrada.
 class HomeScreen extends ConsumerStatefulWidget {
@@ -91,12 +90,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         style: _primaryButtonStyle(
                           minimumSize: const Size(0, 52),
                         ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const LevelSelectScreen(),
-                          ),
-                        ),
+                        onPressed: () => context.push(AppRoutes.levels),
                         child: const Text('JUGAR'),
                       ),
                     ),
@@ -119,12 +113,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             borderRadius: BorderRadius.circular(14),
                           ),
                         ),
-                        onPressed: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => const GenerateLevelScreen(),
-                          ),
-                        ),
+                        onPressed: () => context.push(AppRoutes.generate),
                         icon: const Icon(Icons.auto_awesome, size: 18),
                         label: const Text('AI LEVEL BUILDER'),
                       ),
@@ -174,12 +163,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   : OutlinedButton.icon(
                       onPressed: auth.isLoading
                           ? null
-                          : () => Navigator.push(
-                                context,
-                                MaterialPageRoute(
-                                  builder: (_) => const LoginScreen(),
-                                ),
-                              ),
+                          : () => context.push(AppRoutes.login),
                       style: OutlinedButton.styleFrom(
                         foregroundColor: _t.onPrimary,
                         side: BorderSide(

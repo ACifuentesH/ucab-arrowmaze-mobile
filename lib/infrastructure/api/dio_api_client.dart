@@ -5,9 +5,19 @@ import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/services/session_expired_notifier.dart';
 import 'package:arrow_maze/domain/interfaces/i_local_storage.dart';
 
+/// Rutas de API que no requieren ni deben recibir `Authorization: Bearer`.
+const _publicApiPaths = {
+  '/auth/login',
+  '/auth/register',
+};
+
+bool _isPublicApiPath(String path) =>
+    _publicApiPaths.contains(path.split('?').first);
+
 /// Adapter Dio de [IApiClient] contra ucab-arrowmaze-api.
 ///
-/// - Interceptor de request: `Content-Type: application/json` + Bearer JWT.
+/// - Interceptor de request: `Content-Type: application/json` + Bearer JWT
+///   solo en rutas protegidas.
 /// - Desempaqueta `{ success, data, message }` y retorna `data`.
 /// - Mapea 401/404/409/422/500 → [ApiError]; en 401 borra el token y notifica.
 class DioApiClient implements IApiClient {
@@ -74,7 +84,6 @@ class DioApiClient implements IApiClient {
       return envelope['data'];
     }
 
-    print('--- INTERCEPTOR: Error HTTP detectado: $status');
     throw await _statusToError(
       status,
       (envelope['message'] as String?) ?? 'Unexpected API error',
@@ -84,9 +93,6 @@ class DioApiClient implements IApiClient {
   Future<ApiError> _mapDioException(DioException e) async {
     final response = e.response;
     if (response != null) {
-      print(
-        '--- INTERCEPTOR: Error HTTP detectado: ${response.statusCode}',
-      );
       final envelope = _asEnvelope(response.data);
       final message =
           (envelope['message'] as String?) ?? e.message ?? 'Unexpected API error';
@@ -105,7 +111,6 @@ class DioApiClient implements IApiClient {
     if (status == 401) {
       await _storage.deleteToken();
       _sessionExpired.notify();
-      print('--- INTERCEPTOR: Señal de logout ejecutada');
       return UnauthorizedError(message);
     }
     return switch (status) {
@@ -128,10 +133,14 @@ class _AuthInterceptor extends Interceptor {
     RequestInterceptorHandler handler,
   ) async {
     options.headers['Content-Type'] = 'application/json';
-    final token = await _storage.readToken();
-    if (token != null && token.isNotEmpty) {
-      options.headers['Authorization'] = 'Bearer token_invalido_123';
+
+    if (!_isPublicApiPath(options.path)) {
+      final token = await _storage.readToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
     }
+
     handler.next(options);
   }
 }

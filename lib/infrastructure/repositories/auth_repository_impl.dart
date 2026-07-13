@@ -45,9 +45,25 @@ class AuthRepositoryImpl implements IAuthRepository {
   @override
   Future<void> logout() => _storage.deleteToken();
 
+  @override
+  Future<User?> restoreSession() async {
+    final token = await _storage.readToken();
+    if (token == null || token.isEmpty) return null;
+
+    final user = await _storage.readUser();
+    if (user == null) {
+      await _storage.deleteToken();
+      return null;
+    }
+
+    return user;
+  }
+
   Future<User> _persistSession(Map<String, dynamic> data) async {
     final token = data['token'] as String;
+    final user = User.fromJson(data['user'] as Map<String, dynamic>);
     await _storage.saveToken(token);
-    return User.fromJson(data['user'] as Map<String, dynamic>);
+    await _storage.saveUser(user);
+    return user;
   }
 }

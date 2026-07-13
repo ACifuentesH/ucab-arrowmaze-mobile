@@ -29,6 +29,7 @@ import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/application/use_cases/leaderboard/get_leaderboard_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
 import 'package:arrow_maze/config/api_config.dart';
@@ -249,12 +250,17 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>(
   (ref) => LogoutUseCase(auth: ref.read(authRepositoryProvider)),
 );
 
+final restoreSessionUseCaseProvider = Provider<RestoreSessionUseCase>(
+  (ref) => RestoreSessionUseCase(auth: ref.read(authRepositoryProvider)),
+);
+
 final authViewModelProvider =
     StateNotifierProvider<AuthViewModel, AuthState>(
   (ref) => AuthViewModel(
     login: ref.read(loginUseCaseProvider),
     register: ref.read(registerUseCaseProvider),
     logout: ref.read(logoutUseCaseProvider),
+    restoreSession: ref.read(restoreSessionUseCaseProvider),
     sessionExpired: ref.read(sessionExpiredNotifierProvider),
     sessionCleanup: ref.read(sessionCleanupProvider),
   ),

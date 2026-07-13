@@ -7,6 +7,7 @@ import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_view_model.dart';
 
@@ -32,7 +33,10 @@ void main() {
         login: LoginUseCase(auth: auth),
         register: RegisterUseCase(auth: auth),
         logout: LogoutUseCase(auth: auth),
+        restoreSession: RestoreSessionUseCase(auth: auth),
         sessionCleanup: sessionCleanup,
+        restoreOnInit: false,
+        initialState: const AuthState(),
       );
     });
 
@@ -117,6 +121,61 @@ void main() {
 
       expect(viewModel.state.status, AuthStatus.unauthenticated);
       verifyNever(() => sessionCleanup.clearSessionState());
+    });
+
+    test('should_start_in_checking_state_when_session_restore_is_pending',
+        () async {
+      when(() => auth.restoreSession()).thenAnswer((_) async {
+        await Future<void>.delayed(const Duration(milliseconds: 50));
+        return UserMother.alice();
+      });
+
+      final restoringViewModel = AuthViewModel(
+        login: LoginUseCase(auth: auth),
+        register: RegisterUseCase(auth: auth),
+        logout: LogoutUseCase(auth: auth),
+        restoreSession: RestoreSessionUseCase(auth: auth),
+      );
+
+      expect(restoringViewModel.state.status, AuthStatus.checking);
+
+      await Future<void>.delayed(const Duration(milliseconds: 60));
+
+      expect(restoringViewModel.state.status, AuthStatus.authenticated);
+      expect(restoringViewModel.state.user?.username, 'alice');
+    });
+
+    test('should_restore_authenticated_state_when_stored_session_exists',
+        () async {
+      when(() => auth.restoreSession()).thenAnswer((_) async => UserMother.alice());
+
+      final restoringViewModel = AuthViewModel(
+        login: LoginUseCase(auth: auth),
+        register: RegisterUseCase(auth: auth),
+        logout: LogoutUseCase(auth: auth),
+        restoreSession: RestoreSessionUseCase(auth: auth),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(restoringViewModel.state.status, AuthStatus.authenticated);
+      expect(restoringViewModel.state.user?.username, 'alice');
+    });
+
+    test('should_be_unauthenticated_when_no_stored_session_exists', () async {
+      when(() => auth.restoreSession()).thenAnswer((_) async => null);
+
+      final restoringViewModel = AuthViewModel(
+        login: LoginUseCase(auth: auth),
+        register: RegisterUseCase(auth: auth),
+        logout: LogoutUseCase(auth: auth),
+        restoreSession: RestoreSessionUseCase(auth: auth),
+      );
+
+      await Future<void>.delayed(Duration.zero);
+
+      expect(restoringViewModel.state.status, AuthStatus.unauthenticated);
+      expect(restoringViewModel.state.user, isNull);
     });
   });
 }

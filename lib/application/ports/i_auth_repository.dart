@@ -14,4 +14,7 @@ abstract interface class IAuthRepository {
   });
 
   Future<void> logout();
+
+  /// Restaura la sesión local si hay JWT y usuario persistidos.
+  Future<User?> restoreSession();
 }

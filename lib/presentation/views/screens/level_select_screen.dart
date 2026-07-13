@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:arrow_maze/application/dtos/level_select_entry.dart';
 import 'package:arrow_maze/application/dtos/playable_level.dart';
 import 'package:arrow_maze/application/enums/level_status.dart';
+import 'package:arrow_maze/config/app_router.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
-import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
 
 /// Pantalla de selección: campaña con progresión (el siguiente nivel se
 /// desbloquea al completar el anterior) + niveles generados con IA.
@@ -37,10 +38,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
         .toList();
     await ref.read(gameViewModelProvider.notifier).startCampaign(queue);
     if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const GameScreen()),
-    );
+    await context.push(AppRoutes.game);
     if (mounted) ref.read(levelSelectViewModelProvider.notifier).load();
   }
 
@@ -50,10 +48,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
           difficulty: entry.preview.difficulty,
         );
     if (!mounted) return;
-    await Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const GameScreen()),
-    );
+    await context.push(AppRoutes.game);
     if (mounted) ref.read(levelSelectViewModelProvider.notifier).load();
   }
 

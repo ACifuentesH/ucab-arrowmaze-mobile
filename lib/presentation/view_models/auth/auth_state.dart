@@ -4,6 +4,9 @@ import 'package:arrow_maze/domain/entities/user.dart';
 enum AuthStatus {
   unauthenticated,
   authenticated,
+  /// Restaurando sesión desde almacenamiento seguro al arrancar la app.
+  checking,
+  /// Operación de login, registro o logout en curso.
   loading,
 }
 
@@ -19,6 +22,8 @@ class AuthState {
   });
 
   bool get isAuthenticated => status == AuthStatus.authenticated;
+
+  bool get isChecking => status == AuthStatus.checking;
 
   bool get isLoading => status == AuthStatus.loading;
 
@@ -45,6 +50,8 @@ class AuthState {
         status: AuthStatus.authenticated,
         user: user,
       );
+
+  factory AuthState.checking() => const AuthState(status: AuthStatus.checking);
 
   factory AuthState.loading() => const AuthState(status: AuthStatus.loading);
 }

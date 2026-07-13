@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:arrow_maze/application/dtos/level_result.dart';
 import 'package:arrow_maze/domain/game_status.dart';
 import 'package:arrow_maze/config/theme_config.dart';
@@ -87,12 +88,12 @@ class GameScreen extends ConsumerWidget {
               result: gs.lastResult,
               hasNext: gs.hasNextLevel,
               onNext: ctrl.playNext,
-              onBack: () => Navigator.pop(context),
+              onBack: () => context.pop(),
             ),
           if (gs.status == GameStatus.gameOver)
             _DefeatOverlay(
               onRetry: ctrl.restart,
-              onBack: () => Navigator.pop(context),
+              onBack: () => context.pop(),
             ),
         ],
       ),

@@ -8,6 +8,7 @@ import 'package:arrow_maze/domain/interfaces/i_local_storage.dart';
 import 'package:arrow_maze/infrastructure/repositories/auth_repository_impl.dart';
 
 import '../../_support/mothers/api_response_mother.dart';
+import '../../_support/mothers/user_mother.dart';
 
 class MockApiClient extends Mock implements IApiClient {}
 
@@ -15,6 +16,10 @@ class MockLocalStorage extends Mock implements ILocalStorage {}
 
 /// Pruebas de caja negra sobre [AuthRepositoryImpl].
 void main() {
+  setUpAll(() {
+    registerFallbackValue(UserMother.alice());
+  });
+
   group('AuthRepositoryImpl', () {
     late MockApiClient api;
     late MockLocalStorage storage;
@@ -25,7 +30,10 @@ void main() {
       storage = MockLocalStorage();
       repository = AuthRepositoryImpl(api: api, storage: storage);
       when(() => storage.saveToken(any())).thenAnswer((_) async {});
+      when(() => storage.saveUser(any())).thenAnswer((_) async {});
       when(() => storage.deleteToken()).thenAnswer((_) async {});
+      when(() => storage.readUser()).thenAnswer((_) async => null);
+      when(() => storage.readToken()).thenAnswer((_) async => null);
     });
 
     test(
@@ -45,6 +53,7 @@ void main() {
       expect(user.username, 'alice');
       expect(user.email, 'alice@example.com');
       verify(() => storage.saveToken('jwt-login')).called(1);
+      verify(() => storage.saveUser(UserMother.alice())).called(1);
     });
 
     test(
@@ -65,6 +74,7 @@ void main() {
       expect(user.username, 'alice');
       expect(user.email, 'alice@example.com');
       verify(() => storage.saveToken('jwt-register')).called(1);
+      verify(() => storage.saveUser(UserMother.alice())).called(1);
     });
 
     test('should_clear_local_storage_when_logout_is_called', () async {
@@ -102,6 +112,26 @@ void main() {
       );
 
       verifyNever(() => storage.saveToken(any()));
+      verifyNever(() => storage.saveUser(any()));
+    });
+
+    test('should_restore_user_when_token_and_user_are_stored', () async {
+      when(() => storage.readToken()).thenAnswer((_) async => 'stored-jwt');
+      when(() => storage.readUser()).thenAnswer((_) async => UserMother.alice());
+
+      final user = await repository.restoreSession();
+
+      expect(user, UserMother.alice());
+    });
+
+    test('should_clear_orphan_token_when_user_is_missing', () async {
+      when(() => storage.readToken()).thenAnswer((_) async => 'orphan-jwt');
+      when(() => storage.readUser()).thenAnswer((_) async => null);
+
+      final user = await repository.restoreSession();
+
+      expect(user, isNull);
+      verify(() => storage.deleteToken()).called(1);
     });
   });
 }

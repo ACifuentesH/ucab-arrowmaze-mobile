@@ -1,11 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
+import 'package:arrow_maze/config/app_router.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
-import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
-import 'package:arrow_maze/presentation/views/screens/register_screen.dart';
-import 'package:arrow_maze/presentation/views/screens/home_screen.dart';
 
 /// Pantalla de inicio de sesión conectada a [AuthViewModel].
 class LoginScreen extends ConsumerStatefulWidget {
@@ -73,20 +72,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authViewModelProvider);
-
-    ref.listen(authViewModelProvider, (previous, next) {
-      if (next.status == AuthStatus.authenticated &&
-          previous?.status != AuthStatus.authenticated) {
-        final navigator = Navigator.of(context);
-        if (navigator.canPop()) {
-          navigator.pop(true);
-        } else {
-          navigator.pushReplacement(
-            MaterialPageRoute(builder: (_) => const HomeScreen()),
-          );
-        }
-      }
-    });
 
     return Scaffold(
       backgroundColor: _t.background,
@@ -256,12 +241,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           TextButton(
                             onPressed: auth.isLoading
                                 ? null
-                                : () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterScreen(),
-                                      ),
-                                    ),
+                                : () => context.push(AppRoutes.register),
                             child: Text(
                               '¿No tienes cuenta? Regístrate',
                               style: TextStyle(

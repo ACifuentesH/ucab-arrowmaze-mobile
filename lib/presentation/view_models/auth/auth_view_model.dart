@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arrow_maze/application/errors/api_error.dart';
@@ -6,12 +8,14 @@ import 'package:arrow_maze/application/services/session_expired_notifier.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 
 class AuthViewModel extends StateNotifier<AuthState> {
   final LoginUseCase _login;
   final RegisterUseCase _register;
   final LogoutUseCase _logout;
+  final RestoreSessionUseCase _restoreSession;
   final SessionExpiredNotifier? _sessionExpired;
   final ISessionCleanup? _sessionCleanup;
 
@@ -19,15 +23,36 @@ class AuthViewModel extends StateNotifier<AuthState> {
     required LoginUseCase login,
     required RegisterUseCase register,
     required LogoutUseCase logout,
+    required RestoreSessionUseCase restoreSession,
     SessionExpiredNotifier? sessionExpired,
     ISessionCleanup? sessionCleanup,
+    bool restoreOnInit = true,
+    AuthState initialState = const AuthState(status: AuthStatus.checking),
   })  : _login = login,
         _register = register,
         _logout = logout,
+        _restoreSession = restoreSession,
         _sessionExpired = sessionExpired,
         _sessionCleanup = sessionCleanup,
-        super(const AuthState()) {
+        super(initialState) {
     _sessionExpired?.onSessionExpired = handleSessionExpired;
+    if (restoreOnInit) {
+      unawaited(_tryRestoreSession());
+    }
+  }
+
+  Future<void> _tryRestoreSession() async {
+    try {
+      final user = await _restoreSession.execute();
+      if (!mounted) return;
+
+      state = user != null
+          ? AuthState.authenticated(user)
+          : AuthState.unauthenticated();
+    } catch (_) {
+      if (!mounted) return;
+      state = AuthState.unauthenticated();
+    }
   }
 
   Future<void> login(String email, String password) async {
@@ -90,9 +115,6 @@ class AuthViewModel extends StateNotifier<AuthState> {
   /// Invocado por [SessionExpiredNotifier] cuando el cliente HTTP detecta un 401.
   void handleSessionExpired() {
     if (state.status != AuthStatus.authenticated) return;
-    print(
-      '--- RIVERPOD: Ejecutando logout y cambiando estado a unauthenticated',
-    );
     _endSession(
       errorMessage: 'Tu sesión expiró. Inicia sesión de nuevo.',
     );

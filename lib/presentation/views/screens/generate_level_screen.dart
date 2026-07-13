@@ -1,12 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
 import 'package:arrow_maze/application/dtos/level_preview.dart';
 import 'package:arrow_maze/application/enums/difficulty.dart';
 import 'package:arrow_maze/application/enums/shape_name.dart';
+import 'package:arrow_maze/config/app_router.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
 import 'package:arrow_maze/config/providers.dart';
-import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
 
 class GenerateLevelScreen extends ConsumerStatefulWidget {
   const GenerateLevelScreen({super.key});
@@ -189,9 +190,7 @@ class _GenerateLevelScreenState extends ConsumerState<GenerateLevelScreen> {
       BuildContext context, WidgetRef ref, String levelId) async {
     await ref.read(gameViewModelProvider.notifier).loadLevel(levelId);
     if (!context.mounted) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(builder: (_) => const GameScreen()),
-    );
+    context.push(AppRoutes.game);
   }
 
   String _difficultyDesc(Difficulty d) => switch (d) {
