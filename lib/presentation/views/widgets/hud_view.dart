@@ -46,14 +46,14 @@ class HudView extends StatelessWidget {
           // Cronómetro / cuenta regresiva
           Icon(
             limit != null ? Icons.timer : Icons.timer_outlined,
-            color: isUrgent ? Colors.redAccent : _t.hudText,
+            color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
             size: 18,
           ),
           const SizedBox(width: 4),
           Text(
             _fmt(displaySeconds),
             style: TextStyle(
-              color: isUrgent ? Colors.redAccent : _t.hudText,
+              color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
               fontSize: 16,
               fontWeight: FontWeight.bold,
               fontFeatures: const [FontFeature.tabularFigures()],

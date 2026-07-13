@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:arrow_maze/config/session_navigation.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/config/providers.dart';
@@ -50,6 +49,9 @@ class _ArrowMazeAppState extends ConsumerState<ArrowMazeApp> {
           useMaterial3: true,
         ),
         home: const HomeScreen(),
+        scaffoldBackgroundColor: _t.background,
+        fontFamily: 'Outfit',
+        useMaterial3: true,
       ),
     );
   }

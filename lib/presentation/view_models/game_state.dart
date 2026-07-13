@@ -1,3 +1,4 @@
+import 'package:arrow_maze/application/dtos/level_result.dart';
 import 'package:arrow_maze/domain/aggregates/board.dart';
 import 'package:arrow_maze/domain/entities/arrow.dart';
 import 'package:arrow_maze/domain/game_status.dart';
@@ -24,6 +25,12 @@ class GameState {
   /// Refleja el estado de silencio del IAudioService.
   final bool isMuted;
 
+  /// Puntuación del nivel recién completado; null mientras se juega.
+  final LevelResult? lastResult;
+
+  /// true si en la cola de campaña hay un nivel después del actual.
+  final bool hasNextLevel;
+
   const GameState({
     this.board,
     this.currentLevelId,
@@ -33,6 +40,8 @@ class GameState {
     this.lastBlockedArrowId,
     this.elapsedSeconds = 0,
     this.isMuted = false,
+    this.lastResult,
+    this.hasNextLevel = false,
   });
 
   const GameState.initial() : this();
@@ -54,6 +63,9 @@ class GameState {
     bool clearBlocked = false,
     int? elapsedSeconds,
     bool? isMuted,
+    LevelResult? lastResult,
+    bool clearResult = false,
+    bool? hasNextLevel,
   }) {
     return GameState(
       board: board ?? this.board,
@@ -65,6 +77,8 @@ class GameState {
           clearBlocked ? null : (lastBlockedArrowId ?? this.lastBlockedArrowId),
       elapsedSeconds: elapsedSeconds ?? this.elapsedSeconds,
       isMuted: isMuted ?? this.isMuted,
+      lastResult: clearResult ? null : (lastResult ?? this.lastResult),
+      hasNextLevel: hasNextLevel ?? this.hasNextLevel,
     );
   }
 }

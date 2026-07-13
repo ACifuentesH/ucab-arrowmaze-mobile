@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:arrow_maze/application/dtos/level_result.dart';
 import 'package:arrow_maze/domain/game_status.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/config/providers.dart';
@@ -82,7 +83,12 @@ class GameScreen extends ConsumerWidget {
             ],
           ),
           if (gs.status == GameStatus.levelCleared)
-            _VictoryOverlay(onBack: () => Navigator.pop(context)),
+            _VictoryOverlay(
+              result: gs.lastResult,
+              hasNext: gs.hasNextLevel,
+              onNext: ctrl.playNext,
+              onBack: () => Navigator.pop(context),
+            ),
           if (gs.status == GameStatus.gameOver)
             _DefeatOverlay(
               onRetry: ctrl.restart,
@@ -97,24 +103,82 @@ class GameScreen extends ConsumerWidget {
 // ── Overlays ──────────────────────────────────────────────────────────────────
 
 class _VictoryOverlay extends StatelessWidget {
+  final LevelResult? result;
+  final bool hasNext;
+  final VoidCallback onNext;
   final VoidCallback onBack;
-  const _VictoryOverlay({required this.onBack});
+
+  const _VictoryOverlay({
+    required this.result,
+    required this.hasNext,
+    required this.onNext,
+    required this.onBack,
+  });
 
   @override
   Widget build(BuildContext context) {
+    final subtitle = result == null
+        ? 'Todas las flechas escaparon.'
+        : 'Puntuación: ${result!.score}'
+            '${result!.isNewBest ? '  ·  ¡Nuevo récord!' : ''}';
     return _Overlay(
       color: ThemeConfig.dark.victoryOverlay.withValues(alpha: 0.92),
       icon: Icons.star_rounded,
       title: '¡Nivel completado!',
-      subtitle: 'Todas las flechas escaparon.',
+      subtitle: subtitle,
+      header: result == null ? null : _StarsBanner(stars: result!.stars),
       actions: [
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Colors.white),
-          onPressed: onBack,
-          child: const Text('Siguiente',
-              style: TextStyle(color: Color(0xFF00B4D8), fontWeight: FontWeight.bold)),
-        ),
+        if (hasNext) ...[
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.white),
+            onPressed: onNext,
+            child: Text('Siguiente nivel',
+                style: TextStyle(
+                    color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(width: 12),
+          OutlinedButton(
+            style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white)),
+            onPressed: onBack,
+            child: const Text('Niveles'),
+          ),
+        ] else
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: Colors.white),
+            onPressed: onBack,
+            child: Text('Niveles',
+                style: TextStyle(
+                    color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
+          ),
       ],
+    );
+  }
+}
+
+/// Fila de 3 estrellas del resultado, mostrada sobre el título de victoria.
+class _StarsBanner extends StatelessWidget {
+  final int stars;
+  const _StarsBanner({required this.stars});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(3, (i) {
+        final earned = i < stars;
+        return Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 4),
+          child: Icon(
+            earned ? Icons.star_rounded : Icons.star_outline_rounded,
+            size: 44,
+            color: earned
+                ? const Color(0xFFFFB238)
+                : Colors.white.withValues(alpha: 0.35),
+          ),
+        );
+      }),
     );
   }
 }
@@ -135,8 +199,8 @@ class _DefeatOverlay extends StatelessWidget {
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: Colors.white),
           onPressed: onRetry,
-          child: const Text('Reintentar',
-              style: TextStyle(color: Color(0xFF7B1E3A), fontWeight: FontWeight.bold)),
+          child: Text('Reintentar',
+              style: TextStyle(color: ThemeConfig.dark.defeatOverlay, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 12),
         OutlinedButton(
@@ -158,12 +222,16 @@ class _Overlay extends StatelessWidget {
   final String subtitle;
   final List<Widget> actions;
 
+  /// Widget opcional mostrado en lugar del icono (ej. estrellas ganadas).
+  final Widget? header;
+
   const _Overlay({
     required this.color,
     required this.icon,
     required this.title,
     required this.subtitle,
     required this.actions,
+    this.header,
   });
 
   @override
@@ -176,7 +244,7 @@ class _Overlay extends StatelessWidget {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(icon, size: 72, color: Colors.white),
+              header ?? Icon(icon, size: 72, color: Colors.white),
               const SizedBox(height: 16),
               Text(title,
                   textAlign: TextAlign.center,

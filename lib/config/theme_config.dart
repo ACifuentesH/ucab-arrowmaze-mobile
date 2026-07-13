@@ -36,20 +36,21 @@ class ThemeConfig {
     required this.defeatOverlay,
   });
 
+  /// "Sunset Cálido": grises carbón cálidos + coral, mostaza y rosa fuerte.
   static const ThemeConfig dark = ThemeConfig(
-    background: Color(0xFF1A1A2E),
-    boardBackground: Color(0xFF16213E),
-    emptyCell: Color(0xFF0F3460),
-    wallCell: Color(0xFF3A3A5C),
-    exitCell: Color(0xFF00B4D8),
-    arrowCell: Color(0xFFE94560),
-    arrowIcon: Color(0xFFFFFFFF),
-    hudText: Color(0xFFE0E0E0),
-    lifeActive: Color(0xFFE94560),
-    lifeEmpty: Color(0xFF3A3A5C),
-    primary: Color(0xFFE94560),
-    onPrimary: Color(0xFFFFFFFF),
-    victoryOverlay: Color(0xFF00B4D8),
-    defeatOverlay: Color(0xFF7B1E3A),
+    background: Color(0xFF1B1B1F),
+    boardBackground: Color(0xFF232328),
+    emptyCell: Color(0xFF2E2E36),
+    wallCell: Color(0xFF3D3D46),
+    exitCell: Color(0xFFFFB238),
+    arrowCell: Color(0xFFFF6B4A),
+    arrowIcon: Color(0xFFF3EFE9),
+    hudText: Color(0xFFF3EFE9),
+    lifeActive: Color(0xFFFF3D68),
+    lifeEmpty: Color(0xFF3D3D46),
+    primary: Color(0xFFFF6B4A),
+    onPrimary: Color(0xFF1B1B1F),
+    victoryOverlay: Color(0xFFFFB238),
+    defeatOverlay: Color(0xFF7A2E3A),
   );
 }

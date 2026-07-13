@@ -1,7 +1,6 @@
 import 'package:dio/dio.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-
 import 'package:arrow_maze/application/builders/level_builder.dart';
 import 'package:arrow_maze/application/commands/command_invoker.dart';
 import 'package:arrow_maze/application/dtos/level_preview.dart';
@@ -17,8 +16,10 @@ import 'package:arrow_maze/application/ports/i_progress_repository.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/services/session_expired_notifier.dart';
+import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/get_level_catalog_use_case.dart';
+import 'package:arrow_maze/application/use_cases/get_level_selection_use_case.dart';
 import 'package:arrow_maze/application/use_cases/i_remove_arrow_use_case.dart';
 import 'package:arrow_maze/application/use_cases/load_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/remove_arrow_use_case.dart';
@@ -55,6 +56,8 @@ import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
+import 'package:arrow_maze/presentation/view_models/level_select_state.dart';
+import 'package:arrow_maze/presentation/view_models/level_select_view_model.dart';
 
 // ── Infraestructura: SharedPreferences ───────────────────────────────────────
 // Sobreescrito en main() con la instancia real antes de runApp().
@@ -151,6 +154,19 @@ final undoMoveUseCaseProvider = Provider<UndoMoveUseCase>(
 final saveProgressUseCaseProvider = Provider<SaveProgressUseCase>(
   (ref) => SaveProgressUseCase(
     repository: ref.read(playerProgressRepositoryProvider),
+  ),
+);
+
+final completeLevelUseCaseProvider = Provider<CompleteLevelUseCase>(
+  (ref) => CompleteLevelUseCase(
+    repository: ref.read(playerProgressRepositoryProvider),
+  ),
+);
+
+final getLevelSelectionUseCaseProvider = Provider<GetLevelSelectionUseCase>(
+  (ref) => GetLevelSelectionUseCase(
+    catalog: ref.read(levelCatalogServiceProvider),
+    progress: ref.read(playerProgressRepositoryProvider),
   ),
 );
 
@@ -269,6 +285,7 @@ final gameViewModelProvider =
     removeArrow: ref.read(removeArrowUseCaseProvider),
     restart: ref.read(restartLevelUseCaseProvider),
     undo: ref.read(undoMoveUseCaseProvider),
+    completeLevel: ref.read(completeLevelUseCaseProvider),
     timeService: ref.read(timeServiceProvider),
     audioService: ref.read(audioServiceProvider),
   ),
@@ -285,5 +302,14 @@ class _RiverpodSessionCleanup implements ISessionCleanup {
     _ref.invalidate(generateLevelViewModelProvider);
     _ref.invalidate(getLevelCatalogUseCaseProvider);
     _ref.invalidate(commandInvokerProvider);
+    _ref.invalidate(levelSelectViewModelProvider);
   }
 }
+// ── LevelSelectViewModel ──────────────────────────────────────────────────
+
+final levelSelectViewModelProvider =
+    StateNotifierProvider<LevelSelectViewModel, LevelSelectState>(
+  (ref) => LevelSelectViewModel(
+    getSelection: ref.read(getLevelSelectionUseCaseProvider),
+  ),
+);
