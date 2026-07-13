@@ -84,7 +84,7 @@
 
 **Lessons learned:** Hand-designed puzzle data is code: without the solvability test, one wrong cell coordinate silently produces an unwinnable level. Encoding the invariant as a test caught design mistakes during iteration.
 
-### Entry 007 — feature/pattern-hardening: fix mislabeled design patterns in code comments
+### Entry 008 — feature/pattern-hardening: fix mislabeled design patterns in code comments
 
 **Task:** Harden the "Design Patterns" rubric criterion for the oral defense by making every pattern claim in code comments match what the code actually does (per `docs/DEVELOPMENT_PLAN.md`, section B). The repo already has 8 solid, defensible GoF patterns; the goal was to remove three mislabels that a professor reading the code closely could exploit — no new patterns invented, no functional behavior changed.
 
