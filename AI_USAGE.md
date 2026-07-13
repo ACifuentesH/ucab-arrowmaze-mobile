@@ -84,6 +84,26 @@
 
 **Lessons learned:** Hand-designed puzzle data is code: without the solvability test, one wrong cell coordinate silently produces an unwinnable level. Encoding the invariant as a test caught design mistakes during iteration.
 
+### Entry 007 — feature/pattern-hardening: fix mislabeled design patterns in code comments
+
+**Task:** Harden the "Design Patterns" rubric criterion for the oral defense by making every pattern claim in code comments match what the code actually does (per `docs/DEVELOPMENT_PLAN.md`, section B). The repo already has 8 solid, defensible GoF patterns; the goal was to remove three mislabels that a professor reading the code closely could exploit — no new patterns invented, no functional behavior changed.
+
+**Prompt (paraphrase):** "Rename/relabel `CompositeLevelRepository`/`CompositeLevelCatalogService` (they're really Chain of Responsibility, not Composite); change the `domain_events.dart` 'Observer pattern' comment to 'Domain Events pattern (DDD)' since it's pull-based (`Board.pullEvents()`), not GoF Observer; make sure the Riverpod StateNotifier comments don't also mislabel Observer (Riverpod IS the real Observer). Optionally soften the fake 'State pattern' comment on the `GameStatus` enum — but don't force a fake State hierarchy. Keep all 169 tests green and `flutter analyze` clean of new issues."
+
+**Result obtained:**
+- Renamed `CompositeLevelRepository` → `ChainedLevelRepository` (file `composite_level_repository.dart` → `chained_level_repository.dart`) and updated the import/usage in `lib/config/providers.dart`. Its `loadLevel` tries each source in order and stops at the first success — genuine Chain of Responsibility; the class doc comment already said so, only the name was wrong.
+- `lib/domain/events/domain_events.dart`: replaced the "Observer pattern" comment with "patrón Domain Events (DDD)" and an explicit note that it is a *pull* mechanism (`pullEvents()`), not GoF Observer.
+- `lib/presentation/view_models/game_view_model.dart`: kept the accurate "Observer pattern" label on the `StateNotifier` class (Riverpod IS the real Observer — screens `ref.watch` it), but relabeled the two inner comments that were calling the pull-based DomainEvents consumption "Observer" to "Domain Events (pull)".
+- `lib/domain/game_status.dart`: softened the misleading "Sirve de base al patrón State" comment to state plainly that it is a simple enum, not GoF State, and that the team deliberately chose not to force an artificial hierarchy (documented decision).
+
+**Team modifications / decisions:**
+- **Deliberate deviation from the plan on the catalog service:** `docs/DEVELOPMENT_PLAN.md` lumps `CompositeLevelCatalogService` with the repository as "Chain of Responsibility". But its `getLevels()` aggregates *all* sources (`Future.wait` + flatten) and treats N catalogs as one — that is genuinely the **Composite** pattern, and its comment already labels it correctly. Renaming it to CoR would have introduced a *new* mislabel and violated the definition of done ("every pattern claim matches the code"), so it was left as Composite. Net effect: the repo actually has a real Composite pattern too, alongside the corrected Chain of Responsibility.
+- **State hierarchy not implemented** (chose the low-risk option the plan explicitly recommended): no `GameStateBehavior`/`PlayingBehavior`/... hierarchy was added, so no new tests were needed. The enum comment was corrected instead.
+
+**Result verification:** `flutter analyze --no-fatal-infos` → 0 new issues (the 39 remaining are pre-existing `info`-level lints). `flutter test` → 169/169 passing. No test behavior changed; the rename touched no test file (no test referenced the renamed class).
+
+**Lessons learned:** "Mislabeled pattern" is not always "wrong pattern in the wrong place" — sometimes only the *name* is wrong while the doc comment is already right (the repository), and sometimes the audit doc itself over-generalizes and the code is actually correct (the catalog was real Composite). Verifying each claim against the concrete method body — fallback-until-success vs. aggregate-all — was what separated the two, and following the audit blindly would have swapped one mislabel for another.
+
 ---
 
 ## Critical Evaluation
