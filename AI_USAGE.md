@@ -84,7 +84,7 @@
 
 **Lessons learned:** Hand-designed puzzle data is code: without the solvability test, one wrong cell coordinate silently produces an unwinnable level. Encoding the invariant as a test caught design mistakes during iteration.
 
-### Entry 008 — feature/settings-i18n: settings screen + real i18n (ES/EN)
+### Entry 009 — feature/settings-i18n: settings screen + real i18n (ES/EN)
 
 **Task:** Add a settings screen reachable from Home (mute toggle + language selector) and bootstrap real localization so the whole app is playable in Spanish and English. Satisfies rubric criteria 5.1.1 ("access to settings") and 5.1.10 ("support for at least two languages").
 
