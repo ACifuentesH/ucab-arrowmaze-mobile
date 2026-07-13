@@ -55,7 +55,7 @@
 
 **Prompt (paraphrase):** "Object Mothers, chainable Testing APIs (given/when/then) hiding mocks and fakes, in-memory fakes for every port, mocktail only where interaction is the observable behavior. AAA, names `should_[outcome]_when_[condition]`, coverage for every VO, entity, aggregate, domain service and application service."
 
-**Result obtained:** `test/_support/{mothers,apis,fakes,solvers}` plus one test file per unit; legacy tests rewritten onto the new architecture; 135+ tests.
+**Result obtained:** `test/_support/{mothers,apis,fakes,solvers}` plus one test file per unit; legacy tests rewritten onto the new architecture; 169 tests as of 2026-07-13 (`flutter test`), all passing.
 
 **Team modifications:** The team defined which interactions count as "observable behavior" (apiClient calls, logger decorator) and kept everything else state-based.
 
@@ -83,6 +83,18 @@
 **Team modifications:** Difficulty curve parameters (lives per tier, time limits, par moves) tuned by the team; visual style kept identical to the legacy design.
 
 **Lessons learned:** Hand-designed puzzle data is code: without the solvability test, one wrong cell coordinate silently produces an unwinnable level. Encoding the invariant as a test caught design mistakes during iteration.
+
+### Entry 007 — feature/audio-assets: background music and SFX
+
+**Task:** Fill the audio asset paths `audio_service.dart` already expected but that only had `.gitkeep` placeholders (`assets/audio/background.{mp3,wav}`, `assets/audio/sfx/{arrow_escaped,button_tap,game_over,level_cleared,move_blocked}.wav`), per `docs/DEVELOPMENT_PLAN.md`'s `feature/audio-assets` item.
+
+**Prompt (paraphrase):** Requested in an earlier session (exact prompt not recoverable from this session); the ask was to produce a background loop and 5 SFX matching the paths `AudioService` already referenced.
+
+**Result obtained:** 6 procedurally-generated PCM WAV files (44.1kHz mono), not sourced from an external sample library — verified in this session by inspecting the raw waveforms: each SFX has a real attack/decay envelope rather than a flat tone, with pitch chosen to match its semantic role (bright ~809Hz ping for `arrow_escaped`, low ~171Hz thud for `move_blocked`, somber ~345Hz tone for `game_over`, a repeating two-note ~668Hz fanfare shape for `level_cleared`, short ~943Hz click for `button_tap`); `background.wav` is a 24s loop with varying dynamics (~110Hz base), not a static drone. Since the audio is self-synthesized rather than a third-party sample, there is no external license to attribute.
+
+**Team modifications:** None; wiring (`_musicPath` updated from `.mp3` to `.wav` to match the actual generated file) done in this session, files staged and committed on `feature/audio-assets`.
+
+**Lessons learned:** Because this entry's generating session wasn't captured live, the original prompt couldn't be quoted verbatim — a reminder to log AI_USAGE entries in the same session the artifact is produced, not retroactively. Verifying "AI-generated" claims by actually inspecting the artifact (waveform envelope/frequency here) rather than trusting a label is what caught a wrong initial assumption in this session (assumed "placeholder beeps" from file duration alone; waveform analysis showed real envelope/pitch design instead).
 
 ---
 
