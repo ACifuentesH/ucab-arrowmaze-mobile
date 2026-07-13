@@ -50,6 +50,8 @@ import 'package:arrow_maze/presentation/view_models/generate_level_view_model.da
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_state.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_view_model.dart';
+import 'package:arrow_maze/presentation/view_models/settings/settings_state.dart';
+import 'package:arrow_maze/presentation/view_models/settings/settings_view_model.dart';
 
 // ── Infraestructura: SharedPreferences ───────────────────────────────────────
 // Sobreescrito en main() con la instancia real antes de runApp().
@@ -244,5 +246,14 @@ final levelSelectViewModelProvider =
     StateNotifierProvider<LevelSelectViewModel, LevelSelectState>(
   (ref) => LevelSelectViewModel(
     getSelection: ref.read(getLevelSelectionUseCaseProvider),
+  ),
+);
+
+// ── SettingsViewModel (idioma + mute) ─────────────────────────────────────
+
+final settingsViewModelProvider =
+    StateNotifierProvider<SettingsViewModel, SettingsState>(
+  (ref) => SettingsViewModel(
+    audioService: ref.read(audioServiceProvider),
   ),
 );

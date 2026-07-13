@@ -6,6 +6,7 @@ import 'package:arrow_maze/application/dtos/playable_level.dart';
 import 'package:arrow_maze/application/enums/level_status.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
 
 /// Pantalla de selección: campaña con progresión (el siguiente nivel se
@@ -59,6 +60,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final state = ref.watch(levelSelectViewModelProvider);
     final campaign = state.campaign;
     final generated = state.generated;
@@ -67,7 +69,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
       backgroundColor: _t.background,
       appBar: AppBar(
         backgroundColor: _t.boardBackground,
-        title: Text('Niveles', style: TextStyle(color: _t.hudText)),
+        title: Text(l.levelsTitle, style: TextStyle(color: _t.hudText)),
         iconTheme: IconThemeData(color: _t.hudText),
         elevation: 0,
       ),
@@ -76,7 +78,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
           : ListView(
               padding: const EdgeInsets.all(20),
               children: [
-                _SectionTitle('Campaña', theme: _t),
+                _SectionTitle(l.campaignSection, theme: _t),
                 const SizedBox(height: 12),
                 GridView.builder(
                   shrinkWrap: true,
@@ -100,13 +102,17 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
                 ),
                 if (generated.isNotEmpty) ...[
                   const SizedBox(height: 28),
-                  _SectionTitle('Generados con IA', theme: _t),
+                  _SectionTitle(l.aiGeneratedSection, theme: _t),
                   const SizedBox(height: 12),
                   ...generated.map((entry) => Padding(
                         padding: const EdgeInsets.only(bottom: 12),
                         child: _GeneratedTile(
                           entry: entry,
                           theme: _t,
+                          label: l.levelMeta(
+                            entry.preview.arrowCount,
+                            entry.preview.difficulty.name,
+                          ),
                           onTap: () => _playGenerated(entry),
                         ),
                       )),
@@ -238,11 +244,13 @@ class _StarsRow extends StatelessWidget {
 class _GeneratedTile extends StatelessWidget {
   final LevelSelectEntry entry;
   final ThemeConfig theme;
+  final String label;
   final VoidCallback onTap;
 
   const _GeneratedTile({
     required this.entry,
     required this.theme,
+    required this.label,
     required this.onTap,
   });
 
@@ -271,8 +279,7 @@ class _GeneratedTile extends StatelessWidget {
                             fontSize: 15)),
                     const SizedBox(height: 2),
                     Text(
-                      '${entry.preview.arrowCount} flechas · '
-                      '${entry.preview.difficulty.name}',
+                      label,
                       style: TextStyle(
                           color: theme.hudText.withValues(alpha: 0.6),
                           fontSize: 12),
