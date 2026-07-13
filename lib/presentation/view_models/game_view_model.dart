@@ -17,8 +17,11 @@ import 'package:arrow_maze/application/use_cases/restart_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
 import 'package:arrow_maze/presentation/view_models/game_state.dart';
 
-/// Gestor de estado (Observer pattern): conecta casos de uso con la UI.
-/// Observa los DomainEvents del Board para disparar audio y controlar el reloj.
+/// Gestor de estado (Observer pattern, vía Riverpod StateNotifier): las
+/// pantallas se suscriben con `ref.watch(...)` y son notificadas en cada
+/// cambio de estado. Conecta casos de uso con la UI.
+/// Consume (pull) los DomainEvents del Board para disparar audio y controlar
+/// el reloj — ese consumo es el patrón Domain Events (DDD), no Observer.
 class GameViewModel extends StateNotifier<GameState> {
   final LoadLevelUseCase _loadLevel;
   final IRemoveArrowUseCase _removeArrow;
@@ -136,7 +139,7 @@ class GameViewModel extends StateNotifier<GameState> {
       });
     }
 
-    // Observer: procesa los DomainEvents emitidos por Board → dispara audio.
+    // Domain Events (pull): procesa los DomainEvents emitidos por Board → audio.
     _processEvents(board);
     return valid;
   }
@@ -203,7 +206,7 @@ class GameViewModel extends StateNotifier<GameState> {
     if (mounted) state = state.copyWith(elapsedSeconds: seconds);
   }
 
-  // ── Observer: DomainEvents → audio ────────────────────────────────────────
+  // ── Domain Events (pull): DomainEvents → audio ────────────────────────────
 
   void _processEvents(Board board) {
     for (final event in board.pullEvents()) {
