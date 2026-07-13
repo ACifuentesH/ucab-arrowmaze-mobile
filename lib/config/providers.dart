@@ -36,7 +36,7 @@ import 'package:arrow_maze/infrastructure/catalog/asset_level_catalog_service.da
 import 'package:arrow_maze/infrastructure/catalog/composite_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/generated_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/repositories/asset_json_level_repository.dart';
-import 'package:arrow_maze/infrastructure/repositories/composite_level_repository.dart';
+import 'package:arrow_maze/infrastructure/repositories/chained_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/generated_json_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_generated_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progress_repository.dart';
@@ -78,9 +78,9 @@ final playerProgressRepositoryProvider = Provider<IPlayerProgressRepository>(
   ),
 );
 
-// CompositeLevelRepository: Chain of Responsibility — assets → generated.
+// ChainedLevelRepository: Chain of Responsibility — assets → generated.
 final levelRepositoryProvider = Provider<ILevelRepository>(
-  (ref) => CompositeLevelRepository([
+  (ref) => ChainedLevelRepository([
     AssetJsonLevelRepository(builder: ref.read(levelBuilderProvider)),
     GeneratedJsonLevelRepository(
       source: ref.read(generatedLevelRepositoryProvider),
