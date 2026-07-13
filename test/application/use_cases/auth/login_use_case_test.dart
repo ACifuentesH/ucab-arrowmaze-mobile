@@ -7,13 +7,13 @@ import '../../../_support/apis/auth_test_api.dart';
 void main() {
   group('LoginUseCase', () {
     test('should_open_a_session_when_credentials_are_valid', () async {
-      (await AuthTestApi().givenApiAcceptsCredentials().whenLoggingIn())
-          .thenSessionShouldBeActiveFor('u-1');
+      (await AuthTestApi().givenAuthAcceptsCredentials().whenLoggingIn())
+          .thenUserShouldBeActiveWithId('u-1');
     });
 
     test('should_fail_with_unauthorized_when_credentials_are_invalid',
         () async {
-      (await AuthTestApi().givenApiRejectsCredentials().whenLoggingIn())
+      (await AuthTestApi().givenAuthRejectsCredentials().whenLoggingIn())
           .thenAuthShouldFailWith<UnauthorizedError>();
     });
   });

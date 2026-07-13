@@ -1,10 +1,9 @@
-import 'package:arrow_maze/application/ports/i_api_client.dart';
+import 'package:arrow_maze/application/ports/i_auth_repository.dart';
 
-/// STUB — feature/auth (compañera). Borra la sesión local.
 class LogoutUseCase {
-  final IApiClient _api;
+  final IAuthRepository _auth;
 
-  const LogoutUseCase({required IApiClient api}) : _api = api;
+  const LogoutUseCase({required IAuthRepository auth}) : _auth = auth;
 
-  Future<void> execute() => _api.logout();
+  Future<void> execute() => _auth.logout();
 }

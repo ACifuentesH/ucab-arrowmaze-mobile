@@ -4,28 +4,27 @@ import 'package:mocktail/mocktail.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
-import 'package:arrow_maze/application/ports/i_api_client.dart';
+import 'package:arrow_maze/application/ports/i_progress_repository.dart';
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
 
 import '../mothers/progress_mother.dart';
 
-class MockApiClient extends Mock implements IApiClient {}
+class MockProgressRepository extends Mock implements IProgressRepository {}
 
-/// Testing API: sincronización de progreso contra el puerto IApiClient.
-/// Aquí SÍ usamos mock (mocktail): la llamada al servicio externo ES el
-/// comportamiento observable (docs/testing-architecture.md §0.5).
+/// Testing API: sincronización de progreso contra [IProgressRepository].
 class SyncProgressTestApi {
   SyncProgressTestApi() {
     registerFallbackValue(ProgressMother.minimalUpdate());
   }
 
-  final MockApiClient _api = MockApiClient();
-  late final SyncProgressUseCase _useCase = SyncProgressUseCase(api: _api);
+  final MockProgressRepository _progress = MockProgressRepository();
+  late final SyncProgressUseCase _useCase =
+      SyncProgressUseCase(progress: _progress);
   PlayerProgressDto? _pulled;
   Object? _error;
 
   SyncProgressTestApi givenARemoteProgressExists() {
-    when(() => _api.getProgress()).thenAnswer(
+    when(() => _progress.getProgress()).thenAnswer(
       (_) async => const PlayerProgressDto(
         userId: 'u-1',
         completedLevels: ['level_1'],
@@ -37,13 +36,13 @@ class SyncProgressTestApi {
   }
 
   SyncProgressTestApi givenANewUserWithoutProgress() {
-    when(() => _api.getProgress())
+    when(() => _progress.getProgress())
         .thenThrow(const NotFoundError('Progress not found'));
     return this;
   }
 
   SyncProgressTestApi givenTheServerAcceptsUpdates() {
-    when(() => _api.putProgress(any())).thenAnswer(
+    when(() => _progress.putProgress(any())).thenAnswer(
       (invocation) async => const PlayerProgressDto(
         userId: 'u-1',
         completedLevels: ['level_1'],
@@ -80,7 +79,7 @@ class SyncProgressTestApi {
 
   void thenUpdateShouldReachTheServerWithLeaderboardFields() {
     final captured =
-        verify(() => _api.putProgress(captureAny())).captured.single
+        verify(() => _progress.putProgress(captureAny())).captured.single
             as ProgressUpdate;
     expect(captured.lastLevelId, isNotNull);
     expect(captured.lastScore, isNotNull);

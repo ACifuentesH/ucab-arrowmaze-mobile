@@ -4,35 +4,45 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
-import 'package:arrow_maze/presentation/views/screens/register_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/home_screen.dart';
 
-/// Pantalla de inicio de sesión conectada a [AuthViewModel].
-class LoginScreen extends ConsumerStatefulWidget {
-  const LoginScreen({super.key});
+/// Pantalla de registro conectada a [AuthViewModel].
+class RegisterScreen extends ConsumerStatefulWidget {
+  const RegisterScreen({super.key});
 
   @override
-  ConsumerState<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<RegisterScreen> createState() => _RegisterScreenState();
 }
 
-class _LoginScreenState extends ConsumerState<LoginScreen> {
+class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   static const ThemeConfig _t = ThemeConfig.dark;
 
   final _formKey = GlobalKey<FormState>();
+  final _usernameController = TextEditingController();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
+  final _usernameFocus = FocusNode();
   final _emailFocus = FocusNode();
   final _passwordFocus = FocusNode();
 
   bool _obscurePassword = true;
+  bool _usernameFocused = false;
   bool _emailFocused = false;
   bool _passwordFocused = false;
 
   @override
   void initState() {
     super.initState();
+    _usernameFocus.addListener(_onUsernameFocusChange);
     _emailFocus.addListener(_onEmailFocusChange);
     _passwordFocus.addListener(_onPasswordFocusChange);
+  }
+
+  void _onUsernameFocusChange() {
+    final focused = _usernameFocus.hasFocus;
+    if (focused != _usernameFocused) {
+      setState(() => _usernameFocused = focused);
+    }
   }
 
   void _onEmailFocusChange() {
@@ -51,10 +61,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
   @override
   void dispose() {
+    _usernameFocus.removeListener(_onUsernameFocusChange);
     _emailFocus.removeListener(_onEmailFocusChange);
     _passwordFocus.removeListener(_onPasswordFocusChange);
+    _usernameFocus.dispose();
     _emailFocus.dispose();
     _passwordFocus.dispose();
+    _usernameController.dispose();
     _emailController.dispose();
     _passwordController.dispose();
     super.dispose();
@@ -64,9 +77,10 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     ref.read(authViewModelProvider.notifier).clearError();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
-    await ref.read(authViewModelProvider.notifier).login(
-          _emailController.text,
-          _passwordController.text,
+    await ref.read(authViewModelProvider.notifier).register(
+          username: _usernameController.text,
+          email: _emailController.text,
+          password: _passwordController.text,
         );
   }
 
@@ -94,7 +108,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: _t.hudText,
-        title: const Text('Iniciar sesión'),
+        title: const Text('Crear cuenta'),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -124,7 +138,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Ingresa tus credenciales para continuar',
+                          'Completa tus datos para registrarte',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -132,7 +146,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           ),
                         ),
                         const SizedBox(height: 40),
-                        const _SectionLabel('Correo electrónico'),
+                        const _SectionLabel('Username'),
+                        const SizedBox(height: 8),
+                        TextFormField(
+                          controller: _usernameController,
+                          focusNode: _usernameFocus,
+                          keyboardType: TextInputType.text,
+                          textInputAction: TextInputAction.next,
+                          autocorrect: false,
+                          enabled: !auth.isLoading,
+                          onTap: () {
+                            if (!_usernameFocused) {
+                              setState(() => _usernameFocused = true);
+                            }
+                          },
+                          decoration: _inputDecoration(
+                            hintText: 'tu_usuario',
+                            showHint: !_usernameFocused,
+                            prefixIcon: Icons.person_outline,
+                          ),
+                          validator: (value) {
+                            final trimmed = value?.trim() ?? '';
+                            if (trimmed.isEmpty) return 'Ingresa un username';
+                            if (trimmed.length < 3 || trimmed.length > 30) {
+                              return 'El username debe tener entre 3 y 30 caracteres';
+                            }
+                            return null;
+                          },
+                          onChanged: (_) => ref
+                              .read(authViewModelProvider.notifier)
+                              .clearError(),
+                        ),
+                        const SizedBox(height: 20),
+                        const _SectionLabel('Email'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _emailController,
@@ -164,7 +210,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               .clearError(),
                         ),
                         const SizedBox(height: 20),
-                        const _SectionLabel('Contraseña'),
+                        const _SectionLabel('Password'),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _passwordController,
@@ -198,6 +244,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           validator: (value) {
                             if (value == null || value.isEmpty) {
                               return 'Ingresa tu contraseña';
+                            }
+                            if (value.length < 6) {
+                              return 'La contraseña debe tener al menos 6 caracteres';
                             }
                             return null;
                           },
@@ -249,21 +298,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text('ENTRAR'),
+                                  : const Text('REGISTRARSE'),
                             ),
                           ),
                           const SizedBox(height: 16),
                           TextButton(
                             onPressed: auth.isLoading
                                 ? null
-                                : () => Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const RegisterScreen(),
-                                      ),
-                                    ),
+                                : () => Navigator.pop(context),
                             child: Text(
-                              '¿No tienes cuenta? Regístrate',
+                              '¿Ya tienes cuenta? Inicia sesión',
                               style: TextStyle(
                                 color: _t.primary.withValues(alpha: 0.9),
                                 fontSize: 14,

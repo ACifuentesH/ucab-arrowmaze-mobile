@@ -1,19 +1,16 @@
-import 'package:arrow_maze/application/dtos/auth_session.dart';
-import 'package:arrow_maze/application/ports/i_api_client.dart';
+import 'package:arrow_maze/application/ports/i_auth_repository.dart';
+import 'package:arrow_maze/domain/entities/user.dart';
 
-/// STUB — feature/auth (compañera).
-/// Orquesta el login contra IApiClient y expone la sesión normalizada.
-/// El token queda guardado por el propio apiClient.
+/// Orquesta el login contra [IAuthRepository].
 class LoginUseCase {
-  final IApiClient _api;
+  final IAuthRepository _auth;
 
-  const LoginUseCase({required IApiClient api}) : _api = api;
+  const LoginUseCase({required IAuthRepository auth}) : _auth = auth;
 
-  Future<AuthSession> execute({
+  Future<User> execute({
     required String email,
     required String password,
   }) {
-    // TODO(feature/auth): validaciones de entrada y política de reintentos.
-    return _api.login(email: email, password: password);
+    return _auth.login(email: email.trim(), password: password);
   }
 }

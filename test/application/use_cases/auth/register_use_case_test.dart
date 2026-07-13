@@ -7,8 +7,8 @@ import '../../../_support/apis/auth_test_api.dart';
 void main() {
   group('RegisterUseCase', () {
     test('should_open_a_session_when_registration_succeeds', () async {
-      (await AuthTestApi().givenApiAcceptsCredentials().whenRegistering())
-          .thenSessionShouldBeActiveFor('u-1');
+      (await AuthTestApi().givenAuthAcceptsCredentials().whenRegistering())
+          .thenUserShouldBeActiveWithId('u-1');
     });
 
     test('should_fail_with_conflict_when_email_is_already_registered',

@@ -1,18 +1,17 @@
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
-import 'package:arrow_maze/application/ports/i_api_client.dart';
+import 'package:arrow_maze/application/ports/i_leaderboard_repository.dart';
 
-/// STUB — feature/leaderboard (compañera).
-/// El backend ya devuelve las entries ordenadas (mayor score primero).
+/// El backend devuelve las entries ordenadas (mayor score primero).
 class GetLeaderboardUseCase {
-  final IApiClient _api;
+  final ILeaderboardRepository _leaderboard;
 
-  const GetLeaderboardUseCase({required IApiClient api}) : _api = api;
+  const GetLeaderboardUseCase({required ILeaderboardRepository leaderboard})
+      : _leaderboard = leaderboard;
 
   Future<List<LeaderboardEntryDto>> execute(
     String levelId, {
     int limit = 10,
   }) {
-    // TODO(feature/leaderboard): cache local / estados empty-error-loading.
-    return _api.getLeaderboard(levelId, limit: limit);
+    return _leaderboard.getLeaderboard(levelId, limit: limit);
   }
 }

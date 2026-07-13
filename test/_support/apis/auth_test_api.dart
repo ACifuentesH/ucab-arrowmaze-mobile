@@ -1,42 +1,37 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
-import 'package:arrow_maze/application/ports/i_api_client.dart';
+import 'package:arrow_maze/application/ports/i_auth_repository.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
 
-import '../mothers/auth_session_mother.dart';
+import '../mothers/user_mother.dart';
 
-class _MockApiClient extends Mock implements IApiClient {}
+class _MockAuthRepository extends Mock implements IAuthRepository {}
 
-/// Testing API: autenticación (login / register / logout) contra IApiClient.
-/// La llamada al servicio externo ES el comportamiento observable, así que
-/// aquí sí usamos mocktail (docs/testing-architecture.md §0.5).
+/// Testing API: autenticación contra [IAuthRepository].
 class AuthTestApi {
-  final _MockApiClient _api = _MockApiClient();
-  AuthSession? _session;
+  final _MockAuthRepository _auth = _MockAuthRepository();
+  Object? _user;
   Object? _error;
 
-  // ── Given ──────────────────────────────────────────────────────────────────
-
-  AuthTestApi givenApiAcceptsCredentials() {
-    when(() => _api.login(
+  AuthTestApi givenAuthAcceptsCredentials() {
+    when(() => _auth.login(
           email: any(named: 'email'),
           password: any(named: 'password'),
-        )).thenAnswer((_) async => AuthSessionMother.active());
-    when(() => _api.register(
+        )).thenAnswer((_) async => UserMother.alice());
+    when(() => _auth.register(
           username: any(named: 'username'),
           email: any(named: 'email'),
           password: any(named: 'password'),
-        )).thenAnswer((_) async => AuthSessionMother.active());
+        )).thenAnswer((_) async => UserMother.alice());
     return this;
   }
 
-  AuthTestApi givenApiRejectsCredentials() {
-    when(() => _api.login(
+  AuthTestApi givenAuthRejectsCredentials() {
+    when(() => _auth.login(
           email: any(named: 'email'),
           password: any(named: 'password'),
         )).thenThrow(const UnauthorizedError('Invalid credentials'));
@@ -44,7 +39,7 @@ class AuthTestApi {
   }
 
   AuthTestApi givenEmailIsAlreadyRegistered() {
-    when(() => _api.register(
+    when(() => _auth.register(
           username: any(named: 'username'),
           email: any(named: 'email'),
           password: any(named: 'password'),
@@ -53,15 +48,13 @@ class AuthTestApi {
   }
 
   AuthTestApi givenALocalSessionExists() {
-    when(() => _api.logout()).thenAnswer((_) async {});
+    when(() => _auth.logout()).thenAnswer((_) async {});
     return this;
   }
 
-  // ── When ───────────────────────────────────────────────────────────────────
-
   Future<AuthTestApi> whenLoggingIn() async {
     try {
-      _session = await LoginUseCase(api: _api)
+      _user = await LoginUseCase(auth: _auth)
           .execute(email: 'alice@example.com', password: 'password123');
     } catch (e) {
       _error = e;
@@ -71,7 +64,7 @@ class AuthTestApi {
 
   Future<AuthTestApi> whenRegistering() async {
     try {
-      _session = await RegisterUseCase(api: _api).execute(
+      _user = await RegisterUseCase(auth: _auth).execute(
         username: 'alice',
         email: 'alice@example.com',
         password: 'password123',
@@ -83,19 +76,16 @@ class AuthTestApi {
   }
 
   Future<AuthTestApi> whenLoggingOut() async {
-    await LogoutUseCase(api: _api).execute();
+    await LogoutUseCase(auth: _auth).execute();
     return this;
   }
 
-  // ── Then ───────────────────────────────────────────────────────────────────
-
-  void thenSessionShouldBeActiveFor(String userId) {
+  void thenUserShouldBeActiveWithId(String userId) {
     expect(_error, isNull);
-    expect(_session!.user.id, equals(userId));
-    expect(_session!.token, isNotEmpty);
+    expect((_user as dynamic).id, equals(userId));
   }
 
   void thenAuthShouldFailWith<T>() => expect(_error, isA<T>());
 
-  void thenSessionShouldBeClosed() => verify(() => _api.logout()).called(1);
+  void thenSessionShouldBeClosed() => verify(() => _auth.logout()).called(1);
 }

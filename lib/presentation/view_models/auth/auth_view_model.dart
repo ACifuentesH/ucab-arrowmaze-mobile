@@ -1,64 +1,111 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:arrow_maze/application/dtos/auth_user.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
+import 'package:arrow_maze/application/services/session_cleanup.dart';
+import 'package:arrow_maze/application/services/session_expired_notifier.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 
-/// STUB — feature/auth (compañera): estado de sesión para las vistas.
-class AuthState {
-  final AuthUser? user;
-  final bool isLoading;
-  final String? errorMessage;
-
-  const AuthState({this.user, this.isLoading = false, this.errorMessage});
-
-  bool get isAuthenticated => user != null;
-}
-
-/// STUB — feature/auth (compañera).
-/// Implementar: login(), register(), logout(), manejo de ApiError
-/// (UnauthorizedError → sesión expirada, ConflictError → duplicados,
-/// ValidationError → errores de formulario).
 class AuthViewModel extends StateNotifier<AuthState> {
   final LoginUseCase _login;
-  // ignore: unused_field
   final RegisterUseCase _register;
-  // ignore: unused_field
   final LogoutUseCase _logout;
+  final SessionExpiredNotifier? _sessionExpired;
+  final ISessionCleanup? _sessionCleanup;
 
   AuthViewModel({
     required LoginUseCase login,
     required RegisterUseCase register,
     required LogoutUseCase logout,
+    SessionExpiredNotifier? sessionExpired,
+    ISessionCleanup? sessionCleanup,
   })  : _login = login,
         _register = register,
         _logout = logout,
-        super(const AuthState());
+        _sessionExpired = sessionExpired,
+        _sessionCleanup = sessionCleanup,
+        super(const AuthState()) {
+    _sessionExpired?.onSessionExpired = handleSessionExpired;
+  }
 
   Future<void> login(String email, String password) async {
-    state = const AuthState(isLoading: true);
+    state = AuthState.loading();
 
     try {
-      final session = await _login.execute(
-        email: email.trim(),
-        password: password,
-      );
-      state = AuthState(user: session.user);
+      final user = await _login.execute(email: email, password: password);
+      state = AuthState.authenticated(user);
     } on ApiError catch (e) {
-      state = AuthState(isLoading: false, errorMessage: e.message);
+      state = AuthState.unauthenticated(errorMessage: e.message);
     } catch (e) {
-      state = AuthState(isLoading: false, errorMessage: e.toString());
+      state = AuthState.unauthenticated(errorMessage: e.toString());
     }
   }
 
   void clearError() {
     if (state.errorMessage != null) {
-      state = AuthState(user: state.user, isLoading: state.isLoading);
+      state = state.copyWith(clearError: true);
     }
   }
 
-  // TODO(feature/auth): Future<void> register(...)
-  // TODO(feature/auth): Future<void> logout()
+  Future<void> register({
+    required String username,
+    required String email,
+    required String password,
+  }) async {
+    state = AuthState.loading();
+
+    try {
+      final user = await _register.execute(
+        username: username,
+        email: email,
+        password: password,
+      );
+      state = AuthState.authenticated(user);
+    } on ApiError catch (e) {
+      state = AuthState.unauthenticated(errorMessage: e.message);
+    } catch (e) {
+      state = AuthState.unauthenticated(errorMessage: e.toString());
+    }
+  }
+
+  Future<void> logout() async {
+    state = AuthState.loading().copyWith(user: state.user);
+
+    try {
+      await _logout.execute();
+      _endSession();
+    } on ApiError catch (e) {
+      state = AuthState.authenticated(state.user!).copyWith(
+        errorMessage: e.message,
+      );
+    } catch (e) {
+      state = AuthState.authenticated(state.user!).copyWith(
+        errorMessage: e.toString(),
+      );
+    }
+  }
+
+  /// Invocado por [SessionExpiredNotifier] cuando el cliente HTTP detecta un 401.
+  void handleSessionExpired() {
+    if (state.status != AuthStatus.authenticated) return;
+    print(
+      '--- RIVERPOD: Ejecutando logout y cambiando estado a unauthenticated',
+    );
+    _endSession(
+      errorMessage: 'Tu sesión expiró. Inicia sesión de nuevo.',
+    );
+  }
+
+  void _endSession({String? errorMessage}) {
+    _sessionCleanup?.clearSessionState();
+    state = AuthState.unauthenticated(errorMessage: errorMessage);
+  }
+
+  @override
+  void dispose() {
+    _sessionExpired?.onSessionExpired = null;
+    super.dispose();
+  }
 }
