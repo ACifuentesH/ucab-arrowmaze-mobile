@@ -1,0 +1,132 @@
+{
+  "@@locale": "en",
+  "appTitle": "Arrow Escape",
+  "@appTitle": {
+    "description": "Application title / game brand name"
+  },
+  "homeTagline": "Clear the board. Survive.",
+  "@homeTagline": {
+    "description": "Subtitle under the game title on the home screen"
+  },
+  "playButton": "PLAY",
+  "@playButton": {
+    "description": "Primary button on home that starts the campaign"
+  },
+  "aiLevelBuilderButton": "AI LEVEL BUILDER",
+  "@aiLevelBuilderButton": {
+    "description": "Home button that opens the AI level generator"
+  },
+  "settingsTitle": "Settings",
+  "@settingsTitle": {
+    "description": "Title of the settings screen"
+  },
+  "settingsTooltip": "Settings",
+  "@settingsTooltip": {
+    "description": "Tooltip of the settings icon on the home screen"
+  },
+  "settingsSoundSection": "Sound",
+  "@settingsSoundSection": {
+    "description": "Section header for audio options in settings"
+  },
+  "settingsMuteLabel": "Mute sound",
+  "@settingsMuteLabel": {
+    "description": "Label of the mute toggle in settings"
+  },
+  "settingsLanguageSection": "Language",
+  "@settingsLanguageSection": {
+    "description": "Section header for the language selector in settings"
+  },
+  "languageSpanish": "Spanish",
+  "@languageSpanish": {
+    "description": "Name of the Spanish language option"
+  },
+  "languageEnglish": "English",
+  "@languageEnglish": {
+    "description": "Name of the English language option"
+  },
+  "undoTooltip": "Undo",
+  "@undoTooltip": {
+    "description": "Tooltip of the undo action in the game screen"
+  },
+  "restartTooltip": "Restart",
+  "@restartTooltip": {
+    "description": "Tooltip of the restart action in the game screen"
+  },
+  "muteTooltip": "Mute",
+  "@muteTooltip": {
+    "description": "Tooltip shown on the HUD mute button when sound is on"
+  },
+  "unmuteTooltip": "Unmute",
+  "@unmuteTooltip": {
+    "description": "Tooltip shown on the HUD mute button when sound is muted"
+  },
+  "victoryTitle": "Level complete!",
+  "@victoryTitle": {
+    "description": "Title of the victory overlay"
+  },
+  "victorySubtitleDefault": "All arrows escaped.",
+  "@victorySubtitleDefault": {
+    "description": "Fallback victory subtitle when no score is available"
+  },
+  "victoryScore": "Score: {score}",
+  "@victoryScore": {
+    "description": "Victory subtitle showing the earned score",
+    "placeholders": {
+      "score": {
+        "type": "int"
+      }
+    }
+  },
+  "newRecord": "New record!",
+  "@newRecord": {
+    "description": "Badge shown when the player beats their best score"
+  },
+  "nextLevelButton": "Next level",
+  "@nextLevelButton": {
+    "description": "Button that advances to the next campaign level"
+  },
+  "levelsButton": "Levels",
+  "@levelsButton": {
+    "description": "Button that returns to the level select screen"
+  },
+  "gameOverTitle": "Game Over",
+  "@gameOverTitle": {
+    "description": "Title of the defeat overlay"
+  },
+  "gameOverSubtitle": "No lives left. Try again!",
+  "@gameOverSubtitle": {
+    "description": "Subtitle of the defeat overlay"
+  },
+  "retryButton": "Retry",
+  "@retryButton": {
+    "description": "Button that restarts the failed level"
+  },
+  "homeButton": "Home",
+  "@homeButton": {
+    "description": "Button that leaves the game back to the previous screen"
+  },
+  "levelsTitle": "Levels",
+  "@levelsTitle": {
+    "description": "Title of the level select screen"
+  },
+  "campaignSection": "Campaign",
+  "@campaignSection": {
+    "description": "Section header for the campaign levels"
+  },
+  "aiGeneratedSection": "AI Generated",
+  "@aiGeneratedSection": {
+    "description": "Section header for AI generated levels"
+  },
+  "levelMeta": "{count} arrows · {difficulty}",
+  "@levelMeta": {
+    "description": "Metadata line of a generated level: arrow count and difficulty",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      },
+      "difficulty": {
+        "type": "String"
+      }
+    }
+  }
+}
