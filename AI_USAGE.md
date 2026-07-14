@@ -132,7 +132,7 @@
 
 **Lessons learned:** Two things that were tricky and where the plan was adjusted: (1) `synthetic-package` in `l10n.yaml` is deprecated in Flutter 3.44 and now a no-op — instead of the legacy `package:flutter_gen/...` synthetic import, generation was pointed at `lib/l10n` with `output-dir` and the result committed, which also makes the `AppLocalizations` import unambiguous for tests. (2) `RadioListTile`'s `groupValue`/`onChanged` API is on the deprecation path (Radio → RadioGroup migration), so the language selector was built from plain `ListTile`s with a check indicator to avoid introducing new analyzer warnings. The mute state is intentionally shared through the single `IAudioService` instance rather than duplicated, so the Settings toggle and the in-game HUD toggle act on the same source of truth.
 
-### Entry 010 — feature/aop-extra-aspects: two more AOP aspects (exceptions + caching)
+### Entry 011 — feature/aop-extra-aspects: two more AOP aspects (exceptions + caching)
 
 **Task:** Raise the AOP criterion (rubric #5) from 1 aspect to 3 by adding two more proxies alongside the existing `UseCaseLoggerProxy`, all following the same Proxy pattern (transparent substitution), per `docs/DEVELOPMENT_PLAN.md` §C `feature/aop-extra-aspects`. Aspect A: centralized exception handling for network calls. Aspect B: TTL cache for the leaderboard. Both wired through Riverpod and covered by interaction-based (mocktail) tests — the one place `docs/testing-architecture.md` §5 explicitly sanctions mocks, because for a decorator the interaction (was the wrapped call made? retried? skipped on a cache hit?) IS the observable behavior.
 
