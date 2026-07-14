@@ -3,13 +3,11 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 import 'package:flutter_test/flutter_test.dart';
 
-import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/services/session_expired_notifier.dart';
 import 'package:arrow_maze/infrastructure/api/dio_api_client.dart';
 
 import '../fakes/fake_local_storage.dart';
-import '../mothers/api_response_mother.dart';
 
 /// Testing API: [IApiClient] contra respuestas JSON simuladas.
 /// Solo verifica contrato de entrada/salida — sin detalles de implementación.

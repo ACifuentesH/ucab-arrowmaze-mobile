@@ -3,7 +3,6 @@ import 'package:mocktail/mocktail.dart';
 
 import 'package:arrow_maze/application/ports/i_auth_repository.dart';
 import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
-import 'package:arrow_maze/domain/entities/user.dart';
 
 import '../../../_support/mothers/user_mother.dart';
 
