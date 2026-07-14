@@ -2,7 +2,7 @@
 
 **Repository:** ucab-arrowmaze-mobile — Arrow Maze Escape Puzzle (Flutter client)
 **Course:** Desarrollo de Software NRC 25783
-**Last updated:** 2026-07-07
+**Last updated:** 2026-07-14
 
 ---
 
@@ -131,6 +131,25 @@
 **Team modifications:** Default language (Spanish, the project's original language) and the exact English wording of the catalog were reviewed by the team; the brand title "Arrow Escape" was intentionally left untranslated.
 
 **Lessons learned:** Two things that were tricky and where the plan was adjusted: (1) `synthetic-package` in `l10n.yaml` is deprecated in Flutter 3.44 and now a no-op — instead of the legacy `package:flutter_gen/...` synthetic import, generation was pointed at `lib/l10n` with `output-dir` and the result committed, which also makes the `AppLocalizations` import unambiguous for tests. (2) `RadioListTile`'s `groupValue`/`onChanged` API is on the deprecation path (Radio → RadioGroup migration), so the language selector was built from plain `ListTile`s with a check indicator to avoid introducing new analyzer warnings. The mute state is intentionally shared through the single `IAudioService` instance rather than duplicated, so the Settings toggle and the in-game HUD toggle act on the same source of truth.
+
+### Entry 010 — feature/aop-extra-aspects: two more AOP aspects (exceptions + caching)
+
+**Task:** Raise the AOP criterion (rubric #5) from 1 aspect to 3 by adding two more proxies alongside the existing `UseCaseLoggerProxy`, all following the same Proxy pattern (transparent substitution), per `docs/DEVELOPMENT_PLAN.md` §C `feature/aop-extra-aspects`. Aspect A: centralized exception handling for network calls. Aspect B: TTL cache for the leaderboard. Both wired through Riverpod and covered by interaction-based (mocktail) tests — the one place `docs/testing-architecture.md` §5 explicitly sanctions mocks, because for a decorator the interaction (was the wrapped call made? retried? skipped on a cache hit?) IS the observable behavior.
+
+**Prompt (paraphrase):** "On a branch cut from `origin/develop`, add `exception_handling_proxy.dart` (map network failures to the existing typed `ApiError` taxonomy uniformly, with simple retry if low-risk) and `caching_use_case_proxy.dart` wrapping `GetLeaderboardUseCase` with time-based invalidation. Match `use_case_logger_proxy.dart`'s shape exactly, wire both into `providers.dart` (`apiClientProvider`, `getLeaderboardUseCaseProvider`), and write mocktail interaction tests following the 3-level Testing-API convention. Keep `flutter analyze` clean of new issues and `flutter test` green."
+
+**Result obtained:**
+- `lib/application/proxies/exception_handling_proxy.dart` — `ExceptionHandlingApiClientProxy implements IApiClient`, wrapping `HttpApiClient` transparently in `apiClientProvider`. A single `_guard<T>()` helper normalizes every one of the port's 8 methods: already-typed `ApiError`s propagate untouched; any unexpected transport exception is mapped uniformly to the existing typed `NetworkError`; transient `NetworkError`s are retried up to `maxAttempts` (default 2) with an injectable `retryDelay`.
+- `lib/application/proxies/caching_use_case_proxy.dart` — `CachingUseCaseProxy implements GetLeaderboardUseCase` (Dart lets a concrete class be used as an interface), memoizing results per `(levelId, limit)` for a TTL (default 30s) with an injectable clock. Wired into `getLeaderboardUseCaseProvider`.
+- Tests (3-level, interaction-based): `ExceptionHandlingProxyTestApi` + `CachingProxyTestApi` in `test/_support/apis/` hide the mocktail mocks and the injected clock; thin specs in `test/application/proxies/` (`should_return_cached_result_when_called_twice_within_ttl`, `should_call_the_wrapped_use_case_again_when_ttl_expires`, `should_map_network_error_to_typed_api_error_when_request_fails`, `should_retry_and_succeed_when_first_attempt_hits_a_transient_network_error`, `should_stop_retrying_and_throw_when_network_error_persists`, etc.). Suite went from 176 to 184 tests, all green; `flutter analyze --no-fatal-infos` stayed at the pre-existing 39 info-level issues (0 new).
+
+**Team modifications / decisions:**
+- **Exception aspect scoped at the port, not by gutting `HttpApiClient`.** The plan floated "extract the dispersed error mapping out of `http_api_client.dart`", but that mapping (HTTP status → `ApiError`) is well-tested there and removing it would be a risky refactor that breaks `http_api_client_test.dart`. Instead the proxy sits *in front of* `IApiClient` as a genuine transparent Proxy (same molde as the logger), complementing the adapter: it catches whatever the adapter doesn't already type (e.g. `TimeoutException`) and adds the cross-cutting retry the adapter lacks. This keeps the aspect additive and low-risk.
+- **Retries: kept, but only for transient `NetworkError`.** Deterministic API errors (401/404/409/422/500) are never retried — re-issuing them is pointless and would mask real failures. Retry applies uniformly across methods including non-idempotent POSTs (register/login); this is acceptable because a `NetworkError` originates from an `http.ClientException` (transport failure, the request generally never completed a round-trip), and a duplicate register would surface as a deterministic `409 ConflictError` rather than silent corruption. Default is 2 attempts (one retry) with a 300ms delay, both injectable so tests run instantly with `retryDelay: Duration.zero`.
+- **Caching proxy implements the concrete `GetLeaderboardUseCase` as an interface** rather than introducing a new `IGetLeaderboardUseCase`. This keeps `getLeaderboardUseCaseProvider`'s type unchanged and, importantly, avoids editing `get_leaderboard_use_case.dart`, which is owned by the parallel `feature/leaderboard-ui` branch — no merge-conflict surface.
+- **One suppressed lint, documented in-file.** Both proxies (like `UseCaseLoggerProxy`) use named `required` params with private fields, which trips `prefer_initializing_formals`. That lint is unsatisfiable here: Dart forbids private *named* parameters (`{required this._delegate}` is a compile error), so `// ignore_for_file: prefer_initializing_formals` was added with an explanatory comment rather than abandoning the repo's named-argument convention. Net analyze diff vs. `develop`: 0 new issues.
+
+**Lessons learned:** "Extract the error mapping" read as a refactor, but the higher-value, lower-risk move was to *add* a cross-cutting layer around the port instead of relocating tested logic out of the adapter — the aspect is defined by what it adds (uniform normalization of untyped failures + retry), not by moving code around. Also: implementing a concrete class as a Dart interface is the clean way to insert a transparent proxy without forcing an interface-extraction change onto a file another teammate owns.
 
 ---
 
