@@ -116,6 +116,22 @@
 
 **Lessons learned:** "Mislabeled pattern" is not always "wrong pattern in the wrong place" — sometimes only the *name* is wrong while the doc comment is already right (the repository), and sometimes the audit doc itself over-generalizes and the code is actually correct (the catalog was real Composite). Verifying each claim against the concrete method body — fallback-until-success vs. aggregate-all — was what separated the two, and following the audit blindly would have swapped one mislabel for another.
 
+### Entry 009 — feature/settings-i18n: settings screen + real i18n (ES/EN)
+
+**Task:** Add a settings screen reachable from Home (mute toggle + language selector) and bootstrap real localization so the whole app is playable in Spanish and English. Satisfies rubric criteria 5.1.1 ("access to settings") and 5.1.10 ("support for at least two languages").
+
+**Prompt (paraphrase):** "New `settings_screen.dart` with a mute toggle (reuse `IAudioService`, do not build a new audio abstraction) and a Spanish/English language selector; add a settings icon on `home_screen.dart` that navigates to it. Stand up real `l10n` infrastructure from scratch (there was zero l10n in the repo): `flutter gen-l10n`, `lib/l10n/app_es.arb` + `app_en.arb`, wire `MaterialApp(localizationsDelegates:, supportedLocales:, locale:)` in `main.dart`. Replace the hardcoded UI strings in `home_screen.dart`, `hud_view.dart`, `game_screen.dart` and `level_select_screen.dart` with `AppLocalizations.of(context)!.xxx`. Tests must follow the 3-level testing architecture: a `SettingsScreenTestApi` with an `IAudioService` fake (cases `should_toggle_mute_when_switch_is_tapped`, `should_change_locale_when_language_is_selected`) plus a `home_screen_test.dart` covering navigation to Settings."
+
+**Result obtained:**
+- l10n bootstrap: added `flutter_localizations` + `intl` and `generate: true` to `pubspec.yaml`, `l10n.yaml` (arb-dir `lib/l10n`, output committed to `lib/l10n`), and the ARB catalogs `app_en.arb` (template) + `app_es.arb` with 29 messages including two parameterised ones (`victoryScore(score)`, `levelMeta(count, difficulty)`). Generated `AppLocalizations` is committed so CI/tests work without a codegen step.
+- `SettingsViewModel`/`SettingsState` (Riverpod `StateNotifier`, MVVM) holding the active `Locale` and the mute flag; `toggleMute()` delegates to the shared `IAudioService`, `setLocale()` drives the UI language. `ArrowMazeApp` is now a `ConsumerWidget` that watches `settingsViewModelProvider.select((s) => s.locale)` and feeds `MaterialApp`.
+- New `SettingsScreen` (mute `SwitchListTile` + language rows) reachable from a settings icon on the Home screen; all hardcoded Spanish strings in home/HUD/game/level-select replaced with `AppLocalizations` lookups.
+- Tests (3-level): `SettingsScreenTestApi` and `HomeScreenTestApi` wrapping `ProviderScope` + a localized `MaterialApp` harness and hiding the `FakeAudioService`; `settings_screen_test.dart` (mute on/off, locale change, and an assertion that visible text actually relocalizes from "Ajustes" to "Settings") and `home_screen_test.dart` (navigation to Settings). Suite went from 169 to 176 tests, all green; `flutter analyze --no-fatal-infos` added zero new issues (still 39 pre-existing info-level lints).
+
+**Team modifications:** Default language (Spanish, the project's original language) and the exact English wording of the catalog were reviewed by the team; the brand title "Arrow Escape" was intentionally left untranslated.
+
+**Lessons learned:** Two things that were tricky and where the plan was adjusted: (1) `synthetic-package` in `l10n.yaml` is deprecated in Flutter 3.44 and now a no-op — instead of the legacy `package:flutter_gen/...` synthetic import, generation was pointed at `lib/l10n` with `output-dir` and the result committed, which also makes the `AppLocalizations` import unambiguous for tests. (2) `RadioListTile`'s `groupValue`/`onChanged` API is on the deprecation path (Radio → RadioGroup migration), so the language selector was built from plain `ListTile`s with a check indicator to avoid introducing new analyzer warnings. The mute state is intentionally shared through the single `IAudioService` instance rather than duplicated, so the Settings toggle and the in-game HUD toggle act on the same source of truth.
+
 ---
 
 ## Critical Evaluation

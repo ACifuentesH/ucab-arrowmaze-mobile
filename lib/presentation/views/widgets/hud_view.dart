@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:arrow_maze/config/theme_config.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/view_models/game_state.dart';
 
 /// HUD superior: vidas, cronómetro/cuenta regresiva, movimientos, flechas, mute.
@@ -19,6 +20,7 @@ class HudView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final livesCount = gameState.lives.value;
     final limit = gameState.board?.timeLimitSeconds;
     final elapsed = gameState.elapsedSeconds;
@@ -86,7 +88,7 @@ class HudView extends StatelessWidget {
           const SizedBox(width: 8),
           // Mute toggle
           IconButton(
-            tooltip: gameState.isMuted ? 'Activar sonido' : 'Silenciar',
+            tooltip: gameState.isMuted ? l.unmuteTooltip : l.muteTooltip,
             icon: Icon(
               gameState.isMuted ? Icons.volume_off : Icons.volume_up,
               color: _t.hudText,

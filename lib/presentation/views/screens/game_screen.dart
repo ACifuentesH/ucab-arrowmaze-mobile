@@ -4,6 +4,7 @@ import 'package:arrow_maze/application/dtos/level_result.dart';
 import 'package:arrow_maze/domain/game_status.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/config/providers.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/views/widgets/board_view.dart';
 import 'package:arrow_maze/presentation/views/widgets/hud_view.dart';
 
@@ -15,6 +16,7 @@ class GameScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final l = AppLocalizations.of(context)!;
     final gs = ref.watch(gameViewModelProvider);
     final ctrl = ref.read(gameViewModelProvider.notifier);
 
@@ -48,12 +50,12 @@ class GameScreen extends ConsumerWidget {
         elevation: 0,
         actions: [
           IconButton(
-            tooltip: 'Deshacer',
+            tooltip: l.undoTooltip,
             icon: Icon(Icons.undo, color: _t.hudText),
             onPressed: ctrl.undo,
           ),
           IconButton(
-            tooltip: 'Reiniciar',
+            tooltip: l.restartTooltip,
             icon: Icon(Icons.refresh, color: _t.hudText),
             onPressed: ctrl.restart,
           ),
@@ -117,14 +119,15 @@ class _VictoryOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     final subtitle = result == null
-        ? 'Todas las flechas escaparon.'
-        : 'Puntuación: ${result!.score}'
-            '${result!.isNewBest ? '  ·  ¡Nuevo récord!' : ''}';
+        ? l.victorySubtitleDefault
+        : l.victoryScore(result!.score) +
+            (result!.isNewBest ? '  ·  ${l.newRecord}' : '');
     return _Overlay(
       color: ThemeConfig.dark.victoryOverlay.withValues(alpha: 0.92),
       icon: Icons.star_rounded,
-      title: '¡Nivel completado!',
+      title: l.victoryTitle,
       subtitle: subtitle,
       header: result == null ? null : _StarsBanner(stars: result!.stars),
       actions: [
@@ -132,7 +135,7 @@ class _VictoryOverlay extends StatelessWidget {
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.white),
             onPressed: onNext,
-            child: Text('Siguiente nivel',
+            child: Text(l.nextLevelButton,
                 style: TextStyle(
                     color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
           ),
@@ -142,13 +145,13 @@ class _VictoryOverlay extends StatelessWidget {
                 foregroundColor: Colors.white,
                 side: const BorderSide(color: Colors.white)),
             onPressed: onBack,
-            child: const Text('Niveles'),
+            child: Text(l.levelsButton),
           ),
         ] else
           FilledButton(
             style: FilledButton.styleFrom(backgroundColor: Colors.white),
             onPressed: onBack,
-            child: Text('Niveles',
+            child: Text(l.levelsButton,
                 style: TextStyle(
                     color: ThemeConfig.dark.victoryOverlay, fontWeight: FontWeight.bold)),
           ),
@@ -190,16 +193,17 @@ class _DefeatOverlay extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
     return _Overlay(
       color: ThemeConfig.dark.defeatOverlay.withValues(alpha: 0.92),
       icon: Icons.heart_broken_rounded,
-      title: 'Game Over',
-      subtitle: 'Sin vidas. ¡Inténtalo de nuevo!',
+      title: l.gameOverTitle,
+      subtitle: l.gameOverSubtitle,
       actions: [
         FilledButton(
           style: FilledButton.styleFrom(backgroundColor: Colors.white),
           onPressed: onRetry,
-          child: Text('Reintentar',
+          child: Text(l.retryButton,
               style: TextStyle(color: ThemeConfig.dark.defeatOverlay, fontWeight: FontWeight.bold)),
         ),
         const SizedBox(width: 12),
@@ -208,7 +212,7 @@ class _DefeatOverlay extends StatelessWidget {
               foregroundColor: Colors.white,
               side: const BorderSide(color: Colors.white)),
           onPressed: onBack,
-          child: const Text('Inicio'),
+          child: Text(l.homeButton),
         ),
       ],
     );
