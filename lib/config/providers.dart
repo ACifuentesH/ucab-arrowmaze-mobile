@@ -12,6 +12,8 @@ import 'package:arrow_maze/application/ports/i_level_catalog_service.dart';
 import 'package:arrow_maze/application/ports/i_level_generator_service.dart';
 import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
 import 'package:arrow_maze/application/ports/i_token_storage.dart';
+import 'package:arrow_maze/application/proxies/caching_use_case_proxy.dart';
+import 'package:arrow_maze/application/proxies/exception_handling_proxy.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
@@ -194,11 +196,16 @@ final tokenStorageProvider = Provider<ITokenStorage>(
   (ref) => SharedPrefsTokenStorage(ref.read(sharedPreferencesProvider)),
 );
 
+// AOP: ExceptionHandlingApiClientProxy centraliza el manejo de errores de red
+// (mapeo uniforme a ApiError + reintento de fallos transitorios) sobre el
+// adapter HTTP real, de forma transparente para todos los casos de uso.
 final apiClientProvider = Provider<IApiClient>(
-  (ref) => HttpApiClient(
-    httpClient: ref.read(httpClientProvider),
-    tokenStorage: ref.read(tokenStorageProvider),
-    baseUrl: ApiConfig.baseUrl,
+  (ref) => ExceptionHandlingApiClientProxy(
+    delegate: HttpApiClient(
+      httpClient: ref.read(httpClientProvider),
+      tokenStorage: ref.read(tokenStorageProvider),
+      baseUrl: ApiConfig.baseUrl,
+    ),
   ),
 );
 
@@ -217,8 +224,13 @@ final logoutUseCaseProvider = Provider<LogoutUseCase>(
   (ref) => LogoutUseCase(api: ref.read(apiClientProvider)),
 );
 
+// AOP: CachingUseCaseProxy memoiza el leaderboard por (levelId, limit) durante
+// un TTL corto, evitando golpear la red en cada refresco de la pantalla.
 final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
-  (ref) => GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
+  (ref) => CachingUseCaseProxy(
+    delegate: GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
+    ttl: const Duration(seconds: 30),
+  ),
 );
 
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
