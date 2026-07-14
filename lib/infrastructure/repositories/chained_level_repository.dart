@@ -9,10 +9,10 @@ import 'package:arrow_maze/domain/value_objects/level_id.dart';
 /// Orden por defecto: AssetJsonLevelRepository → GeneratedJsonLevelRepository.
 /// Agregar fuentes remotas en el futuro solo requiere añadir un elemento a la
 /// lista en el provider — el resto del código no cambia.
-class CompositeLevelRepository implements ILevelRepository {
+class ChainedLevelRepository implements ILevelRepository {
   final List<ILevelRepository> _repos;
 
-  const CompositeLevelRepository(this._repos);
+  const ChainedLevelRepository(this._repos);
 
   @override
   Future<Board> loadLevel(LevelId id) async {

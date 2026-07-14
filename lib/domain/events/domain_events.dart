@@ -1,6 +1,11 @@
 import 'package:arrow_maze/domain/value_objects/level_id.dart';
 
-/// Base de los Eventos de Dominio (Observer pattern).
+/// Base de los Eventos de Dominio (patrón Domain Events, DDD).
+///
+/// Es un mecanismo *pull*: el Board acumula eventos y el consumidor los
+/// recupera con `Board.pullEvents()`. NO es el Observer clásico de GoF
+/// (no hay `subject.attach(observer)` ni `notify()` empujando eventos).
+/// El Observer real del proyecto vive en los StateNotifier de Riverpod.
 abstract class DomainEvent {
   final DateTime occurredOn;
   DomainEvent() : occurredOn = DateTime.now();
