@@ -14,6 +14,10 @@ import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
 class LevelSelectScreen extends ConsumerStatefulWidget {
   const LevelSelectScreen({super.key});
 
+  /// Key estable de la casilla de campaña número [number] (1-based) para las
+  /// pruebas de navegación/interacción.
+  static Key campaignTileKey(int number) => Key('campaign_tile_$number');
+
   @override
   ConsumerState<LevelSelectScreen> createState() => _LevelSelectScreenState();
 }
@@ -92,6 +96,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
                   ),
                   itemCount: campaign.length,
                   itemBuilder: (context, i) => _CampaignTile(
+                    key: LevelSelectScreen.campaignTileKey(i + 1),
                     entry: campaign[i],
                     number: i + 1,
                     theme: _t,
@@ -154,6 +159,7 @@ class _CampaignTile extends StatelessWidget {
   final VoidCallback? onTap;
 
   const _CampaignTile({
+    super.key,
     required this.entry,
     required this.number,
     required this.theme,

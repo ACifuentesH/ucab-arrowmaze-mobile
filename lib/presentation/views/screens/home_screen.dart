@@ -14,6 +14,9 @@ class HomeScreen extends StatelessWidget {
   /// Key estable del botón de ajustes para las pruebas de navegación.
   static const Key settingsButtonKey = Key('home_settings_button');
 
+  /// Key estable del botón "JUGAR" para las pruebas de navegación.
+  static const Key playButtonKey = Key('home_play_button');
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -58,6 +61,7 @@ class HomeScreen extends StatelessWidget {
                   ),
                   const SizedBox(height: 72),
                   FilledButton(
+                    key: playButtonKey,
                     style: FilledButton.styleFrom(
                       backgroundColor: _t.primary,
                       foregroundColor: _t.onPrimary,
