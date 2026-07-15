@@ -1,4 +1,5 @@
 import 'package:audioplayers/audioplayers.dart';
+import 'package:flutter/foundation.dart' show debugPrint, kDebugMode;
 
 import 'package:arrow_maze/application/enums/sound_effect.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
@@ -36,8 +37,13 @@ class AudioService implements IAudioService {
     try {
       await _music.setReleaseMode(ReleaseMode.loop);
       await _music.play(AssetSource(_musicPath));
-    } catch (_) {
-      // Audio file not present during development — skip silently.
+    } catch (e, st) {
+      // Audio is non-critical: never let a playback failure surface as
+      // user-facing error UI. But a swallowed exception here used to hide
+      // real bugs (e.g. an asset missing from pubspec.yaml's `assets:`
+      // list, or a browser rejecting playback) with zero trace — so at
+      // least log it in debug builds.
+      _logPlaybackError('playMusic', e, st);
     }
   }
 
@@ -45,7 +51,9 @@ class AudioService implements IAudioService {
   Future<void> stopMusic() async {
     try {
       await _music.stop();
-    } catch (_) {}
+    } catch (e, st) {
+      _logPlaybackError('stopMusic', e, st);
+    }
   }
 
   @override
@@ -57,8 +65,19 @@ class AudioService implements IAudioService {
     try {
       await player.play(AssetSource(path));
       player.onPlayerComplete.first.then((_) => player.dispose());
-    } catch (_) {
+    } catch (e, st) {
+      _logPlaybackError('playSfx($effect)', e, st);
       await player.dispose();
+    }
+  }
+
+  /// Logs unexpected audio failures in debug builds only. Playback is a
+  /// non-critical feature — never rethrows or shows user-facing error UI —
+  /// but silently discarding every exception (the previous behaviour) hid
+  /// real bugs from development/debugging, which is what this guards against.
+  void _logPlaybackError(String op, Object error, StackTrace stackTrace) {
+    if (kDebugMode) {
+      debugPrint('AudioService.$op failed: $error\n$stackTrace');
     }
   }
 
