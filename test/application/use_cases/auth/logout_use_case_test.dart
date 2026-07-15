@@ -8,5 +8,13 @@ void main() {
       (await AuthTestApi().givenALocalSessionExists().whenLoggingOut())
           .thenSessionShouldBeClosed();
     });
+
+    test('should_clear_local_progress_when_logging_out', () async {
+      final api = await AuthTestApi().givenALocalSessionWithProgress();
+      await api.whenLoggingOut();
+      api.thenSessionShouldBeClosed();
+      await api.thenLocalProgressShouldBeEmpty();
+      await api.thenUserStorageShouldBeCleared();
+    });
   });
 }

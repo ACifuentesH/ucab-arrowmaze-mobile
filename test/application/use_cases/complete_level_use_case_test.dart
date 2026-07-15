@@ -49,5 +49,24 @@ void main() {
       api.thenItShouldBeANewBest();
       await api.thenStoredBestShouldBe(950);
     });
+
+    test('should_update_stars_when_replaying_after_hydration_defaulted_to_one',
+        () async {
+      final api = await CompleteLevelTestApi()
+          .givenHydratedProgressWithDefaultStars(bestScore: 900);
+      // Mismo score máximo (950): isNewBest true → actualiza stars a 3.
+      await api.whenLevelIsCompleted(livesRemaining: 3);
+      api.thenItShouldBeANewBest();
+      await api.thenStoredBestShouldBe(950);
+      await api.thenStoredStarsShouldBe(3);
+    });
+
+    test('should_treat_missing_previous_best_as_zero_when_comparing', () async {
+      final api = await CompleteLevelTestApi()
+          .givenHydratedProgressWithDefaultStars(bestScore: 0);
+      await api.whenLevelIsCompleted(livesRemaining: 2); // 800
+      api.thenItShouldBeANewBest();
+      await api.thenStoredBestShouldBe(800);
+    });
   });
 }

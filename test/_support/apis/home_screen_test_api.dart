@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
@@ -25,9 +26,17 @@ class HomeScreenTestApi {
   HomeScreenTestApi(this._tester);
 
   Future<HomeScreenTestApi> givenTheHomeScreenIsOpen() async {
+    // HomeScreen ahora observa authViewModelProvider (entrada de cuenta) →
+    // necesita sharedPreferencesProvider real para construir la cadena
+    // tokenStorage/userStorage/restoreSession. Sin token guardado, la
+    // restauración de sesión resuelve a "no autenticado" sin tocar la red.
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
     await _tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           audioServiceProvider.overrideWithValue(_audio),
           // La pantalla de selección (destino de "JUGAR") carga el catálogo al
           // abrirse; con catálogo vacío se pinta sin depender de assets/SharedPrefs.

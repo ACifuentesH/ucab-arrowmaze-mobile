@@ -271,6 +271,30 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'{count} arrows · {difficulty}'**
   String levelMeta(int count, String difficulty);
+
+  /// Tooltip of the account icon on the home screen
+  ///
+  /// In en, this message translates to:
+  /// **'Account'**
+  String get accountTooltip;
+
+  /// Home button that opens the login screen for a guest
+  ///
+  /// In en, this message translates to:
+  /// **'Login'**
+  String get loginButton;
+
+  /// Button in the account menu that logs the user out
+  ///
+  /// In en, this message translates to:
+  /// **'LOG OUT'**
+  String get logoutButton;
+
+  /// Greeting shown in the account menu for a logged-in user
+  ///
+  /// In en, this message translates to:
+  /// **'Hi, {username}'**
+  String accountGreeting(String username);
 }
 
 class _AppLocalizationsDelegate

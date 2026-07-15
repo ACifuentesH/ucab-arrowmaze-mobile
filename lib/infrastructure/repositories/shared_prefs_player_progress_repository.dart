@@ -38,6 +38,22 @@ class SharedPrefsPlayerProgressRepository implements IPlayerProgressRepository {
         return LevelProgress.fromJson(jsonDecode(raw) as Map<String, dynamic>);
       }).whereType<LevelProgress>().toList();
 
+  @override
+  Future<void> clear() async {
+    for (final id in _ids()) {
+      await _prefs.remove('$_prefix$id');
+    }
+    await _prefs.remove(_idsKey);
+  }
+
+  @override
+  Future<void> replaceAll(Iterable<LevelProgress> entries) async {
+    await clear();
+    for (final progress in entries) {
+      await save(progress);
+    }
+  }
+
   List<String> _ids() => List<String>.from(
         _prefs.getStringList(_idsKey) ?? [],
       );

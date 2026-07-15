@@ -34,6 +34,10 @@ class ArrowMazeApp extends ConsumerWidget {
       settingsViewModelProvider.select((SettingsState s) => s.locale),
     );
 
+    // Dispara la restauración de sesión (token + usuario locales → GET
+    // /progress) al arrancar la app; AuthViewModel gestiona el resultado.
+    ref.watch(authViewModelProvider);
+
     return MaterialApp(
       onGenerateTitle: (context) => AppLocalizations.of(context)!.appTitle,
       debugShowCheckedModeBanner: false,
