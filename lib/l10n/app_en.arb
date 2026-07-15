@@ -149,5 +149,25 @@
         "type": "String"
       }
     }
+  },
+  "loginPromptTitle": "Want to save your progress?",
+  "@loginPromptTitle": {
+    "description": "Title of the bottom sheet shown when tapping PLAY while logged out"
+  },
+  "loginPromptSubtitle": "Log in or create an account to sync your levels and scores. You can also keep playing without one.",
+  "@loginPromptSubtitle": {
+    "description": "Subtitle of the login prompt bottom sheet explaining the options"
+  },
+  "loginPromptLoginButton": "Log in",
+  "@loginPromptLoginButton": {
+    "description": "Primary button in the login prompt sheet that opens the login screen"
+  },
+  "loginPromptRegisterButton": "Create account",
+  "@loginPromptRegisterButton": {
+    "description": "Secondary button in the login prompt sheet that opens the register screen"
+  },
+  "loginPromptGuestButton": "Continue as guest",
+  "@loginPromptGuestButton": {
+    "description": "Button in the login prompt sheet that dismisses it and proceeds without logging in"
   }
 }

@@ -8,10 +8,14 @@ import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/level_select_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/register_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/settings_screen.dart';
+import 'package:arrow_maze/presentation/views/widgets/animated_logo.dart';
+import 'package:arrow_maze/presentation/views/widgets/login_prompt_dialog.dart';
 
-/// Pantalla de inicio: título del juego, botón de entrada, acceso a ajustes
-/// y — arriba a la izquierda — la entrada de cuenta (login / menú de usuario).
+/// Pantalla de inicio: logo animado, botón de entrada (con prompt de login
+/// al iniciar partida sin sesión), acceso a ajustes y — arriba a la
+/// izquierda — el menú de cuenta cuando ya hay una sesión activa.
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
@@ -21,7 +25,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   /// Key estable del botón "JUGAR" para las pruebas de navegación.
   static const Key playButtonKey = Key('home_play_button');
 
-  /// Key estable del botón/ícono de cuenta (login o menú de usuario).
+  /// Key estable del ícono de cuenta (menú de usuario autenticado).
   static const Key accountButtonKey = Key('home_account_button');
 
   @override
@@ -33,9 +37,64 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
   bool _accountMenuOpen = false;
 
+  /// Una vez que el usuario elige "continuar como invitado" en esta sesión
+  /// de la app, no se lo volvemos a preguntar — evita que el prompt se
+  /// vuelva molesto en partidas repetidas. Se reinicia si cierra sesión,
+  /// para volver a ofrecer login la próxima vez que toque "JUGAR".
+  bool _guestPromptDismissed = false;
+
   Future<void> _logout() async {
     setState(() => _accountMenuOpen = false);
     await ref.read(authViewModelProvider.notifier).logout();
+  }
+
+  void _goToLevelSelect() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const LevelSelectScreen()),
+    );
+  }
+
+  Future<void> _onPlayPressed() async {
+    final auth = ref.read(authViewModelProvider);
+    if (auth.isAuthenticated || _guestPromptDismissed) {
+      _goToLevelSelect();
+      return;
+    }
+
+    final choice = await showLoginPromptSheet(context);
+    if (!mounted) return;
+
+    switch (choice) {
+      case LoginPromptChoice.guest:
+        setState(() => _guestPromptDismissed = true);
+        _goToLevelSelect();
+        break;
+      case LoginPromptChoice.login:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+        if (!mounted) return;
+        if (ref.read(authViewModelProvider).isAuthenticated) {
+          _goToLevelSelect();
+        }
+        break;
+      case LoginPromptChoice.register:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        );
+        if (!mounted) return;
+        if (ref.read(authViewModelProvider).isAuthenticated) {
+          _goToLevelSelect();
+        }
+        break;
+      case null:
+        // Cerrado sin elegir (deslizado hacia abajo / toque fuera): se queda
+        // en Home, se le volverá a preguntar la próxima vez que toque JUGAR.
+        break;
+    }
   }
 
   @override
@@ -43,10 +102,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     final l = AppLocalizations.of(context)!;
     final auth = ref.watch(authViewModelProvider);
 
-    // Si la sesión se cierra (o expira) mientras el menú está abierto, ciérralo.
+    // Si la sesión se cierra (o expira) mientras el menú está abierto, ciérralo,
+    // y vuelve a habilitar el prompt de login para la próxima partida.
     ref.listen(authViewModelProvider, (previous, next) {
-      if (next.status != AuthStatus.authenticated && _accountMenuOpen) {
-        setState(() => _accountMenuOpen = false);
+      if (next.status != AuthStatus.authenticated) {
+        if (_accountMenuOpen) setState(() => _accountMenuOpen = false);
+        if (previous?.status == AuthStatus.authenticated) {
+          setState(() => _guestPromptDismissed = false);
+        }
       }
     });
 
@@ -74,47 +137,37 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   onTap: () => setState(() => _accountMenuOpen = false),
                 ),
               ),
-            Positioned(
-              top: 4,
-              left: 4,
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  _AccountEntryPoint(
-                    key: HomeScreen.accountButtonKey,
-                    auth: auth,
-                    isMenuOpen: _accountMenuOpen,
-                    onToggleMenu: () =>
-                        setState(() => _accountMenuOpen = !_accountMenuOpen),
-                    onLoginTap: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (_) => const LoginScreen()),
+            if (auth.isAuthenticated)
+              Positioned(
+                top: 4,
+                left: 4,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    IconButton(
+                      key: HomeScreen.accountButtonKey,
+                      tooltip: l.accountTooltip,
+                      onPressed: auth.isLoading
+                          ? null
+                          : () => setState(
+                              () => _accountMenuOpen = !_accountMenuOpen),
+                      icon: Icon(Icons.person,
+                          color: _t.hudText.withValues(alpha: 0.85)),
                     ),
-                  ),
-                  if (_accountMenuOpen && auth.isAuthenticated)
-                    _UserAccountCard(
-                      username: auth.user!.username,
-                      isLoading: auth.isLoading,
-                      onLogout: _logout,
-                    ),
-                ],
+                    if (_accountMenuOpen)
+                      _UserAccountCard(
+                        username: auth.user!.username,
+                        isLoading: auth.isLoading,
+                        onLogout: _logout,
+                      ),
+                  ],
+                ),
               ),
-            ),
             Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Text(
-                    'Arrow\nEscape',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      fontSize: 60,
-                      fontWeight: FontWeight.w900,
-                      color: _t.primary,
-                      height: 1.05,
-                      letterSpacing: 2,
-                    ),
-                  ),
+                  const AnimatedLogo(),
                   const SizedBox(height: 12),
                   Text(
                     l.homeTagline,
@@ -134,11 +187,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(14)),
                     ),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const LevelSelectScreen()),
-                    ),
+                    onPressed: _onPlayPressed,
                     child: Text(l.playButton),
                   ),
                   const SizedBox(height: 16),
@@ -164,55 +213,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
             ),
           ],
         ),
-      ),
-    );
-  }
-}
-
-/// Ícono de cuenta arriba a la izquierda: abre el login si no hay sesión,
-/// o alterna el menú de usuario si ya hay una activa.
-class _AccountEntryPoint extends StatelessWidget {
-  final AuthState auth;
-  final bool isMenuOpen;
-  final VoidCallback onToggleMenu;
-  final VoidCallback onLoginTap;
-
-  const _AccountEntryPoint({
-    super.key,
-    required this.auth,
-    required this.isMenuOpen,
-    required this.onToggleMenu,
-    required this.onLoginTap,
-  });
-
-  static const ThemeConfig _t = ThemeConfig.dark;
-
-  @override
-  Widget build(BuildContext context) {
-    final l = AppLocalizations.of(context)!;
-
-    if (auth.isAuthenticated) {
-      return IconButton(
-        tooltip: l.accountTooltip,
-        onPressed: auth.isLoading ? null : onToggleMenu,
-        icon: Icon(Icons.person, color: _t.hudText.withValues(alpha: 0.85)),
-      );
-    }
-
-    return Padding(
-      padding: const EdgeInsets.all(4),
-      child: OutlinedButton(
-        onPressed: auth.isLoading ? null : onLoginTap,
-        style: OutlinedButton.styleFrom(
-          foregroundColor: _t.hudText,
-          disabledForegroundColor: _t.hudText.withValues(alpha: 0.55),
-          side: BorderSide(color: _t.primary.withValues(alpha: 0.55)),
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          textStyle: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
-          shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(12)),
-        ),
-        child: Text(l.loginButton),
       ),
     );
   }
