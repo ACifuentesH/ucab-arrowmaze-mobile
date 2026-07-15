@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arrow_maze/domain/aggregates/board.dart';
 import 'package:arrow_maze/domain/events/domain_events.dart';
+import 'package:arrow_maze/domain/game_status.dart';
 import 'package:arrow_maze/domain/ports/i_time_service.dart';
 import 'package:arrow_maze/domain/value_objects/level_id.dart';
 import 'package:arrow_maze/application/dtos/playable_level.dart';
@@ -24,6 +25,14 @@ import 'package:arrow_maze/presentation/view_models/game_state.dart';
 /// Consume (pull) los DomainEvents del Board para disparar audio y controlar
 /// el reloj — ese consumo es el patrón Domain Events (DDD), no Observer.
 class GameViewModel extends StateNotifier<GameState> {
+  /// Retraso de la transición observable a [GameStatus.levelCleared] tras el
+  /// escape de la última flecha. Debe superar ligeramente la animación de
+  /// salida de BoardView (`_escapeCtrl`, 520 ms) para que el overlay de
+  /// victoria no aparezca encima de la flecha mientras aún abandona el tablero.
+  /// El estado de dominio se registra síncronamente; solo se difiere lo que la
+  /// UI observa (ver [GameState.deferLevelCleared]).
+  static const Duration victoryRevealDelay = Duration(milliseconds: 550);
+
   final LoadLevelUseCase _loadLevel;
   final IRemoveArrowUseCase _removeArrow;
   final RestartLevelUseCase _restart;
@@ -108,6 +117,7 @@ class GameViewModel extends StateNotifier<GameState> {
         clearBlocked: true,
         clearEscaping: true,
         hasNextLevel: _hasNext,
+        deferLevelCleared: false,
       );
       _startTimer();
       await _audioService.playMusic();
@@ -125,14 +135,27 @@ class GameViewModel extends StateNotifier<GameState> {
     final valid = _removeArrow.execute(board, arrowId);
 
     if (valid) {
+      // Si esta salida vacía el tablero, el Board ya está en levelCleared, pero
+      // retenemos esa transición observable ([GameState.deferLevelCleared]) para
+      // que BoardView complete su animación de escape antes de que GameScreen
+      // muestre el overlay de victoria. La flecha sigue mostrándose durante la
+      // ventana porque BoardView cachea su propia animación de escape.
+      final clearsBoard = board.status == GameStatus.levelCleared;
       state = state.copyWith(
         board: board,
         escapingArrow: arrowSnapshot,
         clearBlocked: true,
+        deferLevelCleared: clearsBoard,
       );
       Future.delayed(const Duration(milliseconds: 350), () {
         if (mounted) state = state.copyWith(clearEscaping: true);
       });
+      if (clearsBoard) {
+        Future.delayed(victoryRevealDelay, () {
+          if (!mounted) return;
+          state = state.copyWith(deferLevelCleared: false);
+        });
+      }
     } else {
       state = state.copyWith(
         board: board,
@@ -158,7 +181,12 @@ class GameViewModel extends StateNotifier<GameState> {
       final board = await _restart.execute(id);
       _initialArrowCount = board.arrowCount;
       _initialLives = board.lives.value;
-      state = state.copyWith(board: board, isLoading: false, elapsedSeconds: 0);
+      state = state.copyWith(
+        board: board,
+        isLoading: false,
+        elapsedSeconds: 0,
+        deferLevelCleared: false,
+      );
       _startTimer();
       await _audioService.playMusic();
     } catch (e) {

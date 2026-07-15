@@ -161,24 +161,71 @@ class _VictoryOverlay extends StatelessWidget {
 }
 
 /// Fila de 3 estrellas del resultado, mostrada sobre el título de victoria.
-class _StarsBanner extends StatelessWidget {
+/// Las estrellas ganadas aparecen en secuencia con un rebote escalonado
+/// (efecto recompensa) en lugar de mostrarse todas de golpe.
+class _StarsBanner extends StatefulWidget {
   final int stars;
   const _StarsBanner({required this.stars});
+
+  @override
+  State<_StarsBanner> createState() => _StarsBannerState();
+}
+
+class _StarsBannerState extends State<_StarsBanner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+
+  static const int _totalStars = 3;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 900),
+    )..forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(3, (i) {
-        final earned = i < stars;
+      children: List.generate(_totalStars, (i) {
+        final earned = i < widget.stars;
+        // Escalonado: cada estrella arranca un poco después que la anterior.
+        final start = (i * 0.2).clamp(0.0, 1.0);
+        final end = (start + 0.55).clamp(0.0, 1.0);
+        final anim = CurvedAnimation(
+          parent: _ctrl,
+          curve: Interval(
+            start,
+            end,
+            // Las ganadas rebotan (elasticOut); las vacías entran suave.
+            curve: earned ? Curves.elasticOut : Curves.easeOut,
+          ),
+        );
         return Padding(
           padding: const EdgeInsets.symmetric(horizontal: 4),
-          child: Icon(
-            earned ? Icons.star_rounded : Icons.star_outline_rounded,
-            size: 44,
-            color: earned
-                ? const Color(0xFFFFB238)
-                : Colors.white.withValues(alpha: 0.35),
+          child: ScaleTransition(
+            scale: anim,
+            child: FadeTransition(
+              opacity: _ctrl.drive(
+                CurveTween(curve: Interval(start, end, curve: Curves.easeOut)),
+              ),
+              child: Icon(
+                earned ? Icons.star_rounded : Icons.star_outline_rounded,
+                size: 48,
+                color: earned
+                    ? const Color(0xFFFFB238)
+                    : Colors.white.withValues(alpha: 0.35),
+              ),
+            ),
           ),
         );
       }),
@@ -219,7 +266,11 @@ class _DefeatOverlay extends StatelessWidget {
   }
 }
 
-class _Overlay extends StatelessWidget {
+/// Overlay de fin de partida (victoria/derrota) con entrada animada: el fondo
+/// se desvanece rápido mientras la tarjeta de contenido aparece con un
+/// pequeño rebote (scale + fade), para que se sienta como una pantalla de
+/// recompensa en vez de un rectángulo de color que aparece de golpe.
+class _Overlay extends StatefulWidget {
   final Color color;
   final IconData icon;
   final String title;
@@ -239,33 +290,93 @@ class _Overlay extends StatelessWidget {
   });
 
   @override
+  State<_Overlay> createState() => _OverlayState();
+}
+
+class _OverlayState extends State<_Overlay>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _ctrl;
+  late final Animation<double> _backdropOpacity;
+  late final Animation<double> _contentOpacity;
+  late final Animation<double> _contentScale;
+
+  @override
+  void initState() {
+    super.initState();
+    _ctrl = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 450),
+    );
+    // El fondo se desvanece primero y rápido; la tarjeta lo sigue con un
+    // ligero rebote (easeOutBack) para dar sensación de "pop" de recompensa.
+    _backdropOpacity = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.0, 0.5, curve: Curves.easeOut),
+    );
+    _contentOpacity = CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.15, 0.7, curve: Curves.easeOut),
+    );
+    _contentScale = Tween(begin: 0.82, end: 1.0).animate(CurvedAnimation(
+      parent: _ctrl,
+      curve: const Interval(0.1, 1.0, curve: Curves.easeOutBack),
+    ));
+    _ctrl.forward();
+  }
+
+  @override
+  void dispose() {
+    _ctrl.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Container(
-      color: color,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 32),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              header ?? Icon(icon, size: 72, color: Colors.white),
-              const SizedBox(height: 16),
-              Text(title,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                      color: Colors.white,
-                      fontSize: 32,
-                      fontWeight: FontWeight.bold)),
-              const SizedBox(height: 8),
-              Text(subtitle,
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.85), fontSize: 15)),
-              const SizedBox(height: 32),
-              Row(
-                  mainAxisAlignment: MainAxisAlignment.center, children: actions),
-            ],
-          ),
+    return AnimatedBuilder(
+      animation: _ctrl,
+      builder: (context, child) {
+        return Stack(
+          fit: StackFit.expand,
+          children: [
+            FadeTransition(
+              opacity: _backdropOpacity,
+              child: Container(color: widget.color),
+            ),
+            FadeTransition(
+              opacity: _contentOpacity,
+              child: Center(
+                child: ScaleTransition(
+                  scale: _contentScale,
+                  child: child,
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            widget.header ?? Icon(widget.icon, size: 72, color: Colors.white),
+            const SizedBox(height: 16),
+            Text(widget.title,
+                textAlign: TextAlign.center,
+                style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 32,
+                    fontWeight: FontWeight.bold)),
+            const SizedBox(height: 8),
+            Text(widget.subtitle,
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                    color: Colors.white.withValues(alpha: 0.85), fontSize: 15)),
+            const SizedBox(height: 32),
+            Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: widget.actions),
+          ],
         ),
       ),
     );
