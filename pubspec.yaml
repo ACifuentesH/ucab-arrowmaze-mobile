@@ -30,6 +30,7 @@ flutter:
   assets:
     - assets/levels/
     - assets/audio/
+    - assets/audio/sfx/
     - assets/prompts/
   fonts:
     - family: Outfit

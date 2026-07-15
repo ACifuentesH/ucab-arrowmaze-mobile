@@ -67,4 +67,40 @@ void main() {
       api.dispose();
     });
   });
+
+  group('GameScreen — victory overlay timing', () {
+    testWidgets(
+        'should_not_show_the_victory_overlay_immediately_when_the_last_arrow_is_tapped',
+        (tester) async {
+      final api = GameScreenTestApi(tester);
+      api.givenALevelWithAnEscapableArrow(id: 'level_test');
+      await api.givenTheGameScreenIsOpenAt('level_test');
+
+      await api.whenTheBoardIsTappedWithoutSettling();
+
+      api.thenTheVictoryOverlayShouldNotBeShownYet();
+
+      // Deja correr los temporizadores pendientes (clearEscaping,
+      // deferLevelCleared) antes de terminar: flutter_test falla el test si
+      // el árbol de widgets se destruye con timers todavía pendientes.
+      await api.whenTheEscapeAnimationDelayElapses();
+      api.dispose();
+    });
+
+    testWidgets(
+        'should_show_the_victory_overlay_after_the_escape_animation_delay_elapses',
+        (tester) async {
+      final api = GameScreenTestApi(tester);
+      api.givenALevelWithAnEscapableArrow(id: 'level_test');
+      await api.givenTheGameScreenIsOpenAt('level_test');
+
+      await api.whenTheBoardIsTappedWithoutSettling();
+      api.thenTheVictoryOverlayShouldNotBeShownYet();
+
+      await api.whenTheEscapeAnimationDelayElapses();
+
+      api.thenTheVictoryOverlayShouldBeShown();
+      api.dispose();
+    });
+  });
 }

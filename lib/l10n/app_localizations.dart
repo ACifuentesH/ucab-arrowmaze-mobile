@@ -295,6 +295,36 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Hi, {username}'**
   String accountGreeting(String username);
+
+  /// Title of the bottom sheet shown when tapping PLAY while logged out
+  ///
+  /// In en, this message translates to:
+  /// **'Want to save your progress?'**
+  String get loginPromptTitle;
+
+  /// Subtitle of the login prompt bottom sheet explaining the options
+  ///
+  /// In en, this message translates to:
+  /// **'Log in or create an account to sync your levels and scores. You can also keep playing without one.'**
+  String get loginPromptSubtitle;
+
+  /// Primary button in the login prompt sheet that opens the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get loginPromptLoginButton;
+
+  /// Secondary button in the login prompt sheet that opens the register screen
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get loginPromptRegisterButton;
+
+  /// Button in the login prompt sheet that dismisses it and proceeds without logging in
+  ///
+  /// In en, this message translates to:
+  /// **'Continue as guest'**
+  String get loginPromptGuestButton;
 }
 
 class _AppLocalizationsDelegate

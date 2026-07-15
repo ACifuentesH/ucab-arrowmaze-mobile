@@ -99,6 +99,31 @@ class GameScreenTestApi {
     return this;
   }
 
+  /// Igual que [whenTheBoardIsTappedAtItsCenter] pero bombea un único frame en
+  /// vez de agotar temporizadores/animaciones: deja el estado justo después
+  /// del tap, antes de que expire el retraso de `GameViewModel.tapArrow` que
+  /// oculta la transición a `levelCleared` mientras la flecha escapa.
+  Future<GameScreenTestApi> whenTheBoardIsTappedWithoutSettling() async {
+    final gesture = find.descendant(
+      of: find.byType(BoardView),
+      matching: find.byType(GestureDetector),
+    );
+    await _tester.tap(gesture);
+    await _tester.pump();
+    return this;
+  }
+
+  /// Avanza el reloj (fake) del test más allá de
+  /// `GameViewModel.victoryRevealDelay`, dejando que la transición observable
+  /// a `levelCleared` finalmente ocurra.
+  Future<GameScreenTestApi> whenTheEscapeAnimationDelayElapses() async {
+    await _tester.pump(
+      GameViewModel.victoryRevealDelay + const Duration(milliseconds: 50),
+    );
+    await _tester.pumpAndSettle();
+    return this;
+  }
+
   // ── Then ───────────────────────────────────────────────────────────────────
 
   void thenTheBoardShouldBeShown() =>
@@ -112,6 +137,9 @@ class GameScreenTestApi {
 
   void thenTheVictoryOverlayShouldBeShown() =>
       expect(find.text('¡Nivel completado!'), findsOneWidget);
+
+  void thenTheVictoryOverlayShouldNotBeShownYet() =>
+      expect(find.text('¡Nivel completado!'), findsNothing);
 
   void thenTheGameOverOverlayShouldBeShown() =>
       expect(find.text('Game Over'), findsOneWidget);

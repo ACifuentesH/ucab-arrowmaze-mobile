@@ -43,7 +43,7 @@ class BoardPainter extends CustomPainter {
     final cs = size.width / boundingCols; // cell size (siempre cuadrada)
 
     canvas.clipRect(Offset.zero & size);
-    _drawBackground(canvas, size);
+    _drawBackground(canvas, cs);
     _drawDots(canvas, cs);
 
     for (final arrow in arrows.values) {
@@ -65,8 +65,19 @@ class BoardPainter extends CustomPainter {
 
   // ── background & dots ────────────────────────────────────────────────────────
 
-  void _drawBackground(Canvas canvas, Size size) {
-    canvas.drawRect(Offset.zero & size, Paint()..color = const Color(0xFF232328));
+  /// Fondo unicolor: se pinta SOLO en las celdas que existen (la forma real del
+  /// nivel), no en todo el rectángulo contenedor. Así las celdas fuera de la
+  /// forma quedan transparentes y muestran el fondo del Scaffold, sin dejar un
+  /// bloque rectangular visible detrás de niveles irregulares (corazón, rombo…).
+  /// El color coincide con ThemeConfig.boardBackground.
+  void _drawBackground(Canvas canvas, double cs) {
+    final path = Path();
+    for (final id in existingCells) {
+      final rc = _parseId(id.value);
+      if (rc == null) continue;
+      path.addRect(Rect.fromLTWH(rc.$2 * cs, rc.$1 * cs, cs, cs));
+    }
+    canvas.drawPath(path, Paint()..color = const Color(0xFF232328));
   }
 
   void _drawDots(Canvas canvas, double cs) {
@@ -83,8 +94,23 @@ class BoardPainter extends CustomPainter {
 
   void _drawArrow(Canvas canvas, Arrow arrow, double cs, List<Offset> pts) {
     final color = _color(arrow.color);
-    _drawBody(canvas, pts, color, cs);
-    _drawHead(canvas, pts.last, arrow.headDirection.index, color, cs);
+    _drawArrowAt(canvas, pts, arrow.headDirection.index, color, cs);
+  }
+
+  /// Dibuja cuerpo + cabeza garantizando que se toquen. El cuerpo se prolonga
+  /// hasta el ápice de la cabeza (en dirección [dirIndex]), de modo que la línea
+  /// entra en la punta de la flecha sin dejar hueco — incluso cuando el último
+  /// tramo del camino llega desde otra dirección (flechas dobladas/en L).
+  void _drawArrowAt(
+    Canvas canvas,
+    List<Offset> pts,
+    int dirIndex,
+    Color color,
+    double cs,
+  ) {
+    final head = _headPoints(pts.last, dirIndex, cs);
+    _drawBody(canvas, [...pts, head.apex], color, cs);
+    _drawHead(canvas, head, color, cs);
   }
 
   /// Animación que recorre el camino: cada celda avanza `t*n` pasos en el
@@ -114,8 +140,7 @@ class BoardPainter extends CustomPainter {
         ? 255
         : ((1.0 - (t - 0.7) / 0.3) * 255).round().clamp(0, 255);
     final color = _color(arrow.color).withAlpha(alpha);
-    _drawBody(canvas, pts, color, cs);
-    _drawHead(canvas, pts.last, arrow.headDirection.index, color, cs);
+    _drawArrowAt(canvas, pts, arrow.headDirection.index, color, cs);
   }
 
   // ── primitives ────────────────────────────────────────────────────────────────
@@ -137,29 +162,42 @@ class BoardPainter extends CustomPainter {
     );
   }
 
-  /// Punta V abierta (no rellena).
-  void _drawHead(Canvas canvas, Offset tip, int dirIndex, Color color, double cs) {
+  /// Geometría de la punta V (apex + dos alas) para una cabeza en [tip] que
+  /// apunta hacia [dirIndex]. Función pura y determinista (testeable).
+  static ({Offset apex, Offset left, Offset right}) _headPoints(
+    Offset tip,
+    int dirIndex,
+    double cs,
+  ) {
     final d = _dir[dirIndex];
     final perp = Offset(-d.dy, d.dx);
     final sz = cs * 0.30;
-    final sw = cs * 0.11;
 
-    // La punta avanza un poco más allá del centro de la celda cabeza
+    // La punta avanza un poco más allá del centro de la celda cabeza.
     final apex = tip + Offset(d.dx * sz * 0.6, d.dy * sz * 0.6);
-    final left  = apex + Offset((-d.dx + perp.dx * 0.7) * sz,
-                                 (-d.dy + perp.dy * 0.7) * sz);
-    final right = apex + Offset((-d.dx - perp.dx * 0.7) * sz,
-                                 (-d.dy - perp.dy * 0.7) * sz);
+    final left = apex +
+        Offset((-d.dx + perp.dx * 0.7) * sz, (-d.dy + perp.dy * 0.7) * sz);
+    final right = apex +
+        Offset((-d.dx - perp.dx * 0.7) * sz, (-d.dy - perp.dy * 0.7) * sz);
+    return (apex: apex, left: left, right: right);
+  }
 
+  /// Punta V abierta (no rellena).
+  void _drawHead(
+    Canvas canvas,
+    ({Offset apex, Offset left, Offset right}) head,
+    Color color,
+    double cs,
+  ) {
     canvas.drawPath(
       Path()
-        ..moveTo(left.dx, left.dy)
-        ..lineTo(apex.dx, apex.dy)
-        ..lineTo(right.dx, right.dy),
+        ..moveTo(head.left.dx, head.left.dy)
+        ..lineTo(head.apex.dx, head.apex.dy)
+        ..lineTo(head.right.dx, head.right.dy),
       Paint()
         ..color = color
         ..style = PaintingStyle.stroke
-        ..strokeWidth = sw
+        ..strokeWidth = cs * 0.11
         ..strokeCap = StrokeCap.round
         ..strokeJoin = StrokeJoin.round,
     );
