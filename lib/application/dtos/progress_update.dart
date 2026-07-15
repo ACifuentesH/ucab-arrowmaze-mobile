@@ -22,8 +22,11 @@ class ProgressUpdate {
   });
 
   Map<String, dynamic> toJson() => {
-        'completedLevels': completedLevels,
-        'bestScores': bestScores,
+        'completedLevels': List<String>.from(completedLevels),
+        // Mapa JSON `{ levelId: score }` — nunca un array.
+        'bestScores': <String, int>{
+          for (final entry in bestScores.entries) entry.key: entry.value,
+        },
         'currentLevelId': currentLevelId,
         if (lastLevelId != null) 'lastLevelId': lastLevelId,
         if (lastScore != null) 'lastScore': lastScore,

@@ -17,11 +17,28 @@ class PlayerProgressDto {
   factory PlayerProgressDto.fromJson(Map<String, dynamic> json) =>
       PlayerProgressDto(
         userId: json['userId'] as String,
-        completedLevels: (json['completedLevels'] as List<dynamic>)
-            .map((e) => e as String)
+        completedLevels: (json['completedLevels'] as List<dynamic>? ?? const [])
+            .map((e) => e.toString())
             .toList(),
-        bestScores: (json['bestScores'] as Map<String, dynamic>)
-            .map((k, v) => MapEntry(k, (v as num).toInt())),
+        bestScores: _parseBestScores(json['bestScores']),
         currentLevelId: json['currentLevelId'] as String,
       );
+
+  /// Acepta el mapa JSON del backend aunque venga tipado como `Map<dynamic, dynamic>`.
+  static Map<String, int> _parseBestScores(Object? raw) {
+    if (raw == null) return {};
+    if (raw is! Map) return {};
+    return {
+      for (final entry in raw.entries)
+        entry.key.toString(): _asInt(entry.value) ?? 0,
+    };
+  }
+
+  static int? _asInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 }

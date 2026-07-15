@@ -13,6 +13,7 @@ import 'package:arrow_maze/application/ports/i_level_catalog_service.dart';
 import 'package:arrow_maze/application/ports/i_level_generator_service.dart';
 import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
 import 'package:arrow_maze/application/ports/i_progress_repository.dart';
+import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/services/session_expired_notifier.dart';
@@ -31,8 +32,11 @@ import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/application/use_cases/leaderboard/get_leaderboard_use_case.dart';
+import 'package:arrow_maze/application/use_cases/progress/hydrate_progress_use_case.dart';
+import 'package:arrow_maze/application/use_cases/progress/push_progress_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
 import 'package:arrow_maze/config/api_config.dart';
+import 'package:arrow_maze/config/progress_sync_coordinator.dart';
 import 'package:arrow_maze/domain/interfaces/i_local_storage.dart';
 import 'package:arrow_maze/domain/ports/i_level_repository.dart';
 import 'package:arrow_maze/domain/ports/i_time_service.dart';
@@ -261,6 +265,7 @@ final authViewModelProvider =
     register: ref.read(registerUseCaseProvider),
     logout: ref.read(logoutUseCaseProvider),
     restoreSession: ref.read(restoreSessionUseCaseProvider),
+    progressSync: ref.read(progressSyncCoordinatorProvider),
     sessionExpired: ref.read(sessionExpiredNotifierProvider),
     sessionCleanup: ref.read(sessionCleanupProvider),
   ),
@@ -282,6 +287,30 @@ final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   ),
 );
 
+final hydrateProgressUseCaseProvider = Provider<HydrateProgressUseCase>(
+  (ref) => HydrateProgressUseCase(
+    sync: ref.read(syncProgressUseCaseProvider),
+    local: ref.read(playerProgressRepositoryProvider),
+    catalog: ref.read(levelCatalogServiceProvider),
+  ),
+);
+
+final pushProgressUseCaseProvider = Provider<PushProgressUseCase>(
+  (ref) => PushProgressUseCase(
+    sync: ref.read(syncProgressUseCaseProvider),
+    local: ref.read(playerProgressRepositoryProvider),
+    storage: ref.read(localStorageProvider),
+  ),
+);
+
+final progressSyncCoordinatorProvider = Provider<IProgressSyncCoordinator>(
+  (ref) => ProgressSyncCoordinator(
+    hydrate: ref.read(hydrateProgressUseCaseProvider),
+    push: ref.read(pushProgressUseCaseProvider),
+    onHydrated: () => ref.invalidate(levelSelectViewModelProvider),
+  ),
+);
+
 // ── GameViewModel ─────────────────────────────────────────────────────────
 
 final gameViewModelProvider =
@@ -294,6 +323,7 @@ final gameViewModelProvider =
     completeLevel: ref.read(completeLevelUseCaseProvider),
     timeService: ref.read(timeServiceProvider),
     audioService: ref.read(audioServiceProvider),
+    progressSync: ref.read(progressSyncCoordinatorProvider),
   ),
 );
 

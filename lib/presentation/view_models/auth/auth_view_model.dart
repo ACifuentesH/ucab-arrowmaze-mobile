@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arrow_maze/application/errors/api_error.dart';
+import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/services/session_expired_notifier.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
@@ -16,6 +17,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
   final RegisterUseCase _register;
   final LogoutUseCase _logout;
   final RestoreSessionUseCase _restoreSession;
+  final IProgressSyncCoordinator? _progressSync;
   final SessionExpiredNotifier? _sessionExpired;
   final ISessionCleanup? _sessionCleanup;
 
@@ -24,6 +26,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
     required RegisterUseCase register,
     required LogoutUseCase logout,
     required RestoreSessionUseCase restoreSession,
+    IProgressSyncCoordinator? progressSync,
     SessionExpiredNotifier? sessionExpired,
     ISessionCleanup? sessionCleanup,
     bool restoreOnInit = true,
@@ -32,6 +35,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
         _register = register,
         _logout = logout,
         _restoreSession = restoreSession,
+        _progressSync = progressSync,
         _sessionExpired = sessionExpired,
         _sessionCleanup = sessionCleanup,
         super(initialState) {
@@ -46,9 +50,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
       final user = await _restoreSession.execute();
       if (!mounted) return;
 
-      state = user != null
-          ? AuthState.authenticated(user)
-          : AuthState.unauthenticated();
+      if (user == null) {
+        state = AuthState.unauthenticated();
+        return;
+      }
+
+      await _syncProgressAfterAuth();
+      if (!mounted) return;
+      state = AuthState.authenticated(user);
     } catch (_) {
       if (!mounted) return;
       state = AuthState.unauthenticated();
@@ -60,6 +69,8 @@ class AuthViewModel extends StateNotifier<AuthState> {
 
     try {
       final user = await _login.execute(email: email, password: password);
+      // pull sobrescribe el progreso efímero de invitado con el remoto.
+      await _syncProgressAfterAuth();
       state = AuthState.authenticated(user);
     } on ApiError catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.message);
@@ -87,6 +98,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
         email: email,
         password: password,
       );
+      await _syncProgressAfterAuth();
       state = AuthState.authenticated(user);
     } on ApiError catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.message);
@@ -123,6 +135,14 @@ class AuthViewModel extends StateNotifier<AuthState> {
   void _endSession({String? errorMessage}) {
     _sessionCleanup?.clearSessionState();
     state = AuthState.unauthenticated(errorMessage: errorMessage);
+  }
+
+  Future<void> _syncProgressAfterAuth() async {
+    try {
+      await _progressSync?.pullAndApplyLocal();
+    } catch (_) {
+      // La hidratación no debe tumbar login/restore (falso negativo).
+    }
   }
 
   @override

@@ -15,4 +15,15 @@ class FakePlayerProgressRepository implements IPlayerProgressRepository {
 
   @override
   Future<List<LevelProgress>> findAll() async => _store.values.toList();
+
+  @override
+  Future<void> clear() async => _store.clear();
+
+  @override
+  Future<void> replaceAll(Iterable<LevelProgress> entries) async {
+    _store.clear();
+    for (final progress in entries) {
+      _store[progress.levelId] = progress;
+    }
+  }
 }
