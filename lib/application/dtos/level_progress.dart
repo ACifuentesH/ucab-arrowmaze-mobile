@@ -29,13 +29,17 @@ class LevelProgress {
 
   factory LevelProgress.fromJson(Map<String, dynamic> json) => LevelProgress(
         levelId: json['levelId'] as String,
-        bestScore: json['bestScore'] as int,
-        bestTimeSeconds: json['bestTimeSeconds'] as int,
-        starsEarned: json['starsEarned'] as int,
+        bestScore: _asInt(json['bestScore']) ?? 0,
+        bestTimeSeconds: _asInt(json['bestTimeSeconds']) ?? 0,
+        starsEarned: (_asInt(json['starsEarned']) ?? 1).clamp(1, 3),
         completedAt: DateTime.parse(json['completedAt'] as String),
       );
 
-  LevelProgress copyWith({int? bestScore, int? bestTimeSeconds, int? starsEarned}) =>
+  LevelProgress copyWith({
+    int? bestScore,
+    int? bestTimeSeconds,
+    int? starsEarned,
+  }) =>
       LevelProgress(
         levelId: levelId,
         bestScore: bestScore ?? this.bestScore,
@@ -43,4 +47,12 @@ class LevelProgress {
         starsEarned: starsEarned ?? this.starsEarned,
         completedAt: completedAt,
       );
+
+  static int? _asInt(Object? value) {
+    if (value == null) return null;
+    if (value is int) return value;
+    if (value is num) return value.toInt();
+    if (value is String) return int.tryParse(value);
+    return null;
+  }
 }

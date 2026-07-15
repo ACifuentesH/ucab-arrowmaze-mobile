@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
@@ -50,9 +51,17 @@ class LevelSelectScreenTestApi {
   }
 
   Future<LevelSelectScreenTestApi> givenTheLevelSelectScreenIsOpen() async {
+    // Tocar un tile desbloqueado navega a GameScreen, que observa
+    // gameViewModelProvider real (incluye IProgressSyncCoordinator) →
+    // necesita sharedPreferencesProvider para construir tokenStorage/
+    // apiClient. Sin token guardado no se dispara ninguna llamada de red.
+    SharedPreferences.setMockInitialValues({});
+    final prefs = await SharedPreferences.getInstance();
+
     await _tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(prefs),
           audioServiceProvider.overrideWithValue(_audio),
           levelCatalogServiceProvider.overrideWithValue(_catalog),
           playerProgressRepositoryProvider.overrideWithValue(_progress),

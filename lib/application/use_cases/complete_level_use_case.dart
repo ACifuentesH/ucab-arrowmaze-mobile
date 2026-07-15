@@ -6,9 +6,9 @@ import 'package:arrow_maze/application/services/score_calculator.dart';
 
 /// Puntúa un nivel recién completado y persiste el mejor intento localmente.
 ///
-/// La sincronización remota (PUT /progress con los campos last*) vive en
-/// SyncProgressUseCase y requiere sesión activa — se orquesta desde
-/// feature/auth cuando exista login.
+/// La sincronización remota (PUT /progress con last*) la dispara
+/// [GameViewModel] vía [IProgressSyncCoordinator.pushCompletedLevel] justo
+/// después de este caso de uso, sin bloquear la UI de victoria.
 class CompleteLevelUseCase {
   final IPlayerProgressRepository _repository;
 
@@ -33,7 +33,6 @@ class CompleteLevelUseCase {
       difficulty: difficulty,
     );
 
-    // El máximo teórico es el mismo cálculo sin vidas perdidas ni tiempo gastado.
     final maxPossibleScore = ScoreCalculator.calculate(
       arrowCount: initialArrowCount,
       livesRemaining: initialLives,
@@ -47,16 +46,26 @@ class CompleteLevelUseCase {
     );
 
     final previous = await _repository.find(levelId);
-    final isNewBest = previous == null || score > previous.bestScore;
-    if (isNewBest) {
+    // Null-safe: progreso mal hidratado o sin bestScore → 0.
+    final previousBest = previous?.bestScore ?? 0;
+    final isNewBest = previous == null || score > previousBest;
+
+    final previousStars = previous?.starsEarned ?? 0;
+    final starsToStore = stars > previousStars ? stars : previousStars;
+
+    // Persistir también si solo mejoran las estrellas (p. ej. tras hidratar
+    // con stars=1 por defecto antes del fix de mapeo).
+    final shouldPersist =
+        isNewBest || starsToStore > previousStars;
+
+    if (shouldPersist) {
       await _repository.save(LevelProgress(
         levelId: levelId,
-        bestScore: score,
-        bestTimeSeconds: elapsedSeconds,
-        starsEarned:
-            previous != null && previous.starsEarned > stars
-                ? previous.starsEarned
-                : stars,
+        bestScore: isNewBest ? score : previousBest,
+        bestTimeSeconds: isNewBest
+            ? elapsedSeconds
+            : previous.bestTimeSeconds,
+        starsEarned: starsToStore.clamp(1, 3),
         completedAt: DateTime.now(),
       ));
     }

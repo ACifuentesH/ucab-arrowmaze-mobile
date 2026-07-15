@@ -28,5 +28,9 @@
   "levelsTitle": "Niveles",
   "campaignSection": "Campaña",
   "aiGeneratedSection": "Generados con IA",
-  "levelMeta": "{count} flechas · {difficulty}"
+  "levelMeta": "{count} flechas · {difficulty}",
+  "accountTooltip": "Cuenta",
+  "loginButton": "Login",
+  "logoutButton": "CERRAR SESIÓN",
+  "accountGreeting": "Hola, {username}"
 }

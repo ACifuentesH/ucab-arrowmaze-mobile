@@ -128,5 +128,26 @@
         "type": "String"
       }
     }
+  },
+  "accountTooltip": "Account",
+  "@accountTooltip": {
+    "description": "Tooltip of the account icon on the home screen"
+  },
+  "loginButton": "Login",
+  "@loginButton": {
+    "description": "Home button that opens the login screen for a guest"
+  },
+  "logoutButton": "LOG OUT",
+  "@logoutButton": {
+    "description": "Button in the account menu that logs the user out"
+  },
+  "accountGreeting": "Hi, {username}",
+  "@accountGreeting": {
+    "description": "Greeting shown in the account menu for a logged-in user",
+    "placeholders": {
+      "username": {
+        "type": "String"
+      }
+    }
   }
 }

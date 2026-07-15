@@ -98,4 +98,18 @@ class AppLocalizationsEn extends AppLocalizations {
   String levelMeta(int count, String difficulty) {
     return '$count arrows · $difficulty';
   }
+
+  @override
+  String get accountTooltip => 'Account';
+
+  @override
+  String get loginButton => 'Login';
+
+  @override
+  String get logoutButton => 'LOG OUT';
+
+  @override
+  String accountGreeting(String username) {
+    return 'Hi, $username';
+  }
 }

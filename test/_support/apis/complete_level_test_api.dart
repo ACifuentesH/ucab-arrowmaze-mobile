@@ -58,4 +58,22 @@ class CompleteLevelTestApi {
     final stored = await _repository.find(_levelId);
     expect(stored!.bestScore, equals(score));
   }
+
+  Future<void> thenStoredStarsShouldBe(int stars) async {
+    final stored = await _repository.find(_levelId);
+    expect(stored!.starsEarned, equals(stars));
+  }
+
+  Future<CompleteLevelTestApi> givenHydratedProgressWithDefaultStars({
+    int bestScore = 900,
+  }) async {
+    await _repository.save(
+      ProgressMother.completedLevel(
+        levelId: _levelId,
+        bestScore: bestScore,
+        stars: 1,
+      ),
+    );
+    return this;
+  }
 }

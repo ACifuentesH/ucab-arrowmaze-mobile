@@ -11,10 +11,13 @@ import 'package:arrow_maze/application/ports/i_generated_level_repository.dart';
 import 'package:arrow_maze/application/ports/i_level_catalog_service.dart';
 import 'package:arrow_maze/application/ports/i_level_generator_service.dart';
 import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
+import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/ports/i_token_storage.dart';
+import 'package:arrow_maze/application/ports/i_user_storage.dart';
 import 'package:arrow_maze/application/proxies/caching_use_case_proxy.dart';
 import 'package:arrow_maze/application/proxies/exception_handling_proxy.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
+import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/get_level_catalog_use_case.dart';
@@ -28,9 +31,13 @@ import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
+import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/application/use_cases/leaderboard/get_leaderboard_use_case.dart';
+import 'package:arrow_maze/application/use_cases/progress/hydrate_progress_use_case.dart';
+import 'package:arrow_maze/application/use_cases/progress/push_progress_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
 import 'package:arrow_maze/config/api_config.dart';
+import 'package:arrow_maze/config/progress_sync_coordinator.dart';
 import 'package:arrow_maze/domain/ports/i_level_repository.dart';
 import 'package:arrow_maze/domain/ports/i_time_service.dart';
 import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
@@ -43,9 +50,12 @@ import 'package:arrow_maze/infrastructure/repositories/generated_json_level_repo
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_generated_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progress_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_token_storage.dart';
+import 'package:arrow_maze/infrastructure/repositories/shared_prefs_user_storage.dart';
 import 'package:arrow_maze/infrastructure/services/audio_service.dart';
 import 'package:arrow_maze/infrastructure/services/groq_level_generator_service.dart';
 import 'package:arrow_maze/infrastructure/services/stopwatch_time_service.dart';
+import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
+import 'package:arrow_maze/presentation/view_models/auth/auth_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/game_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/game_state.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_view_model.dart';
@@ -189,11 +199,14 @@ final generateLevelViewModelProvider =
 );
 
 // ── Infraestructura: apiClient (puerto en application, adapter http) ─────────
-
 final httpClientProvider = Provider<http.Client>((_) => http.Client());
 
 final tokenStorageProvider = Provider<ITokenStorage>(
   (ref) => SharedPrefsTokenStorage(ref.read(sharedPreferencesProvider)),
+);
+
+final userStorageProvider = Provider<IUserStorage>(
+  (ref) => SharedPrefsUserStorage(ref.read(sharedPreferencesProvider)),
 );
 
 // AOP: ExceptionHandlingApiClientProxy centraliza el manejo de errores de red
@@ -209,19 +222,39 @@ final apiClientProvider = Provider<IApiClient>(
   ),
 );
 
-// ── Aplicación: casos de uso remotos (stubs para feature/auth y
-//    feature/leaderboard — ver división de trabajo) ──────────────────────────
+// ── Aplicación: casos de uso remotos (auth + leaderboard + progress-sync) ────
 
 final loginUseCaseProvider = Provider<LoginUseCase>(
-  (ref) => LoginUseCase(api: ref.read(apiClientProvider)),
+  (ref) => LoginUseCase(
+    api: ref.read(apiClientProvider),
+    userStorage: ref.read(userStorageProvider),
+  ),
 );
 
 final registerUseCaseProvider = Provider<RegisterUseCase>(
-  (ref) => RegisterUseCase(api: ref.read(apiClientProvider)),
+  (ref) => RegisterUseCase(
+    api: ref.read(apiClientProvider),
+    userStorage: ref.read(userStorageProvider),
+  ),
 );
 
 final logoutUseCaseProvider = Provider<LogoutUseCase>(
-  (ref) => LogoutUseCase(api: ref.read(apiClientProvider)),
+  (ref) => LogoutUseCase(
+    api: ref.read(apiClientProvider),
+    userStorage: ref.read(userStorageProvider),
+    progress: ref.read(playerProgressRepositoryProvider),
+  ),
+);
+
+final restoreSessionUseCaseProvider = Provider<RestoreSessionUseCase>(
+  (ref) => RestoreSessionUseCase(
+    tokenStorage: ref.read(tokenStorageProvider),
+    userStorage: ref.read(userStorageProvider),
+  ),
+);
+
+final sessionCleanupProvider = Provider<ISessionCleanup>(
+  (ref) => _RiverpodSessionCleanup(ref),
 );
 
 // AOP: CachingUseCaseProxy memoiza el leaderboard por (levelId, limit) durante
@@ -237,6 +270,44 @@ final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
 
+final hydrateProgressUseCaseProvider = Provider<HydrateProgressUseCase>(
+  (ref) => HydrateProgressUseCase(
+    sync: ref.read(syncProgressUseCaseProvider),
+    local: ref.read(playerProgressRepositoryProvider),
+    catalog: ref.read(levelCatalogServiceProvider),
+  ),
+);
+
+final pushProgressUseCaseProvider = Provider<PushProgressUseCase>(
+  (ref) => PushProgressUseCase(
+    sync: ref.read(syncProgressUseCaseProvider),
+    local: ref.read(playerProgressRepositoryProvider),
+    tokens: ref.read(tokenStorageProvider),
+  ),
+);
+
+final progressSyncCoordinatorProvider = Provider<IProgressSyncCoordinator>(
+  (ref) => ProgressSyncCoordinator(
+    hydrate: ref.read(hydrateProgressUseCaseProvider),
+    push: ref.read(pushProgressUseCaseProvider),
+    onHydrated: () => ref.invalidate(levelSelectViewModelProvider),
+  ),
+);
+
+// ── AuthViewModel ─────────────────────────────────────────────────────────
+
+final authViewModelProvider =
+    StateNotifierProvider<AuthViewModel, AuthState>(
+  (ref) => AuthViewModel(
+    login: ref.read(loginUseCaseProvider),
+    register: ref.read(registerUseCaseProvider),
+    logout: ref.read(logoutUseCaseProvider),
+    restoreSession: ref.read(restoreSessionUseCaseProvider),
+    progressSync: ref.read(progressSyncCoordinatorProvider),
+    sessionCleanup: ref.read(sessionCleanupProvider),
+  ),
+);
+
 // ── GameViewModel ─────────────────────────────────────────────────────────
 
 final gameViewModelProvider =
@@ -249,6 +320,7 @@ final gameViewModelProvider =
     completeLevel: ref.read(completeLevelUseCaseProvider),
     timeService: ref.read(timeServiceProvider),
     audioService: ref.read(audioServiceProvider),
+    progressSync: ref.read(progressSyncCoordinatorProvider),
   ),
 );
 
@@ -269,3 +341,18 @@ final settingsViewModelProvider =
     audioService: ref.read(audioServiceProvider),
   ),
 );
+
+/// Adapter Riverpod: invalida estado en memoria al cerrar sesión, para que
+/// la UI refleje progreso vacío (invitado) sin acoplar el ViewModel de auth
+/// a Riverpod directamente (DIP vía [ISessionCleanup]).
+class _RiverpodSessionCleanup implements ISessionCleanup {
+  const _RiverpodSessionCleanup(this._ref);
+
+  final Ref _ref;
+
+  @override
+  void clearSessionState() {
+    _ref.invalidate(levelSelectViewModelProvider);
+    _ref.invalidate(gameViewModelProvider);
+  }
+}

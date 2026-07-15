@@ -1,14 +1,17 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mocktail/mocktail.dart';
 
-import 'package:arrow_maze/application/dtos/auth_session.dart';
+import 'package:arrow_maze/application/dtos/auth_user.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
 
+import '../fakes/fake_player_progress_repository.dart';
+import '../fakes/fake_user_storage.dart';
 import '../mothers/auth_session_mother.dart';
+import '../mothers/progress_mother.dart';
 
 class _MockApiClient extends Mock implements IApiClient {}
 
@@ -17,7 +20,10 @@ class _MockApiClient extends Mock implements IApiClient {}
 /// aquí sí usamos mocktail (docs/testing-architecture.md §0.5).
 class AuthTestApi {
   final _MockApiClient _api = _MockApiClient();
-  AuthSession? _session;
+  final FakeUserStorage _userStorage = FakeUserStorage();
+  final FakePlayerProgressRepository _progress =
+      FakePlayerProgressRepository();
+  AuthUser? _user;
   Object? _error;
 
   // ── Given ──────────────────────────────────────────────────────────────────
@@ -52,6 +58,15 @@ class AuthTestApi {
     return this;
   }
 
+  Future<AuthTestApi> givenALocalSessionWithProgress() async {
+    when(() => _api.logout()).thenAnswer((_) async {});
+    await _userStorage.save(
+      const AuthUser(id: 'u-1', username: 'alice', email: 'a@b.com'),
+    );
+    await _progress.save(ProgressMother.completedLevel());
+    return this;
+  }
+
   AuthTestApi givenALocalSessionExists() {
     when(() => _api.logout()).thenAnswer((_) async {});
     return this;
@@ -61,7 +76,7 @@ class AuthTestApi {
 
   Future<AuthTestApi> whenLoggingIn() async {
     try {
-      _session = await LoginUseCase(api: _api)
+      _user = await LoginUseCase(api: _api, userStorage: _userStorage)
           .execute(email: 'alice@example.com', password: 'password123');
     } catch (e) {
       _error = e;
@@ -71,7 +86,8 @@ class AuthTestApi {
 
   Future<AuthTestApi> whenRegistering() async {
     try {
-      _session = await RegisterUseCase(api: _api).execute(
+      _user = await RegisterUseCase(api: _api, userStorage: _userStorage)
+          .execute(
         username: 'alice',
         email: 'alice@example.com',
         password: 'password123',
@@ -83,7 +99,11 @@ class AuthTestApi {
   }
 
   Future<AuthTestApi> whenLoggingOut() async {
-    await LogoutUseCase(api: _api).execute();
+    await LogoutUseCase(
+      api: _api,
+      userStorage: _userStorage,
+      progress: _progress,
+    ).execute();
     return this;
   }
 
@@ -91,11 +111,18 @@ class AuthTestApi {
 
   void thenSessionShouldBeActiveFor(String userId) {
     expect(_error, isNull);
-    expect(_session!.user.id, equals(userId));
-    expect(_session!.token, isNotEmpty);
+    expect(_user!.id, equals(userId));
   }
 
   void thenAuthShouldFailWith<T>() => expect(_error, isA<T>());
 
   void thenSessionShouldBeClosed() => verify(() => _api.logout()).called(1);
+
+  Future<void> thenLocalProgressShouldBeEmpty() async {
+    expect(await _progress.findAll(), isEmpty);
+  }
+
+  Future<void> thenUserStorageShouldBeCleared() async {
+    expect(await _userStorage.read(), isNull);
+  }
 }

@@ -10,6 +10,7 @@ import 'package:arrow_maze/application/dtos/playable_level.dart';
 import 'package:arrow_maze/application/enums/difficulty.dart';
 import 'package:arrow_maze/application/enums/sound_effect.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
+import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/load_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/i_remove_arrow_use_case.dart';
@@ -30,6 +31,7 @@ class GameViewModel extends StateNotifier<GameState> {
   final CompleteLevelUseCase _completeLevel;
   final ITimeService _timeService;
   final IAudioService _audioService;
+  final IProgressSyncCoordinator? _progressSync;
 
   StreamSubscription<int>? _timeSub;
 
@@ -49,6 +51,7 @@ class GameViewModel extends StateNotifier<GameState> {
     required CompleteLevelUseCase completeLevel,
     required ITimeService timeService,
     required IAudioService audioService,
+    IProgressSyncCoordinator? progressSync,
   })  : _loadLevel = loadLevel,
         _removeArrow = removeArrow,
         _restart = restart,
@@ -56,6 +59,7 @@ class GameViewModel extends StateNotifier<GameState> {
         _completeLevel = completeLevel,
         _timeService = timeService,
         _audioService = audioService,
+        _progressSync = progressSync,
         super(const GameState.initial());
 
   /// Juega una secuencia de niveles (la campaña): al completar uno, la UI
@@ -227,19 +231,36 @@ class GameViewModel extends StateNotifier<GameState> {
     }
   }
 
-  /// Puntúa el nivel completado y persiste el mejor intento (local).
+  /// Puntúa el nivel, guarda el progreso local y dispara PUT /progress
+  /// (fire-and-forget vía [IProgressSyncCoordinator]) sin bloquear la UI.
   Future<void> _registerCompletion(Board board) async {
     if (_queue.isEmpty) return;
     final level = _queue[_queueIndex];
+    final elapsedSeconds = state.elapsedSeconds;
+    final moves = board.moves.value;
+
     final result = await _completeLevel.execute(
       levelId: level.id,
       difficulty: level.difficulty,
       initialArrowCount: _initialArrowCount,
       initialLives: _initialLives,
       livesRemaining: board.lives.value,
-      elapsedSeconds: state.elapsedSeconds,
+      elapsedSeconds: elapsedSeconds,
       timeLimitSeconds: board.timeLimitSeconds,
     );
     if (mounted) state = state.copyWith(lastResult: result);
+
+    final sync = _progressSync;
+    if (sync == null) return;
+
+    final currentLevelId = _hasNext ? _queue[_queueIndex + 1].id : level.id;
+    // Asíncrono y no bloqueante: fallos remotos no deben tumbar la victoria.
+    unawaited(sync.pushCompletedLevel(
+      lastLevelId: level.id,
+      lastScore: result.score,
+      lastMoves: moves,
+      lastTimeSeconds: elapsedSeconds,
+      currentLevelId: currentLevelId,
+    ));
   }
 }
