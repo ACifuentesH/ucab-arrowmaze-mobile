@@ -26,6 +26,41 @@ void main() {
 
       api.thenFilledStarsShouldBeShown(count: 3);
     });
+
+    testWidgets('should_render_a_completed_check_when_a_level_is_completed',
+        (tester) async {
+      final api = LevelSelectScreenTestApi(tester);
+      api
+        ..givenACampaignLevel('level_1')
+        ..givenACampaignLevel('level_2');
+      await api.givenLevelIsCompleted('level_1', stars: 3);
+      await api.givenTheLevelSelectScreenIsOpen();
+
+      // level_1 completado → un check; level_2 pasa a ser el nodo actual.
+      api.thenCompletedChecksShouldBeShown(count: 1);
+    });
+
+    testWidgets('should_mark_the_next_playable_level_as_current',
+        (tester) async {
+      final api = LevelSelectScreenTestApi(tester);
+      api
+        ..givenACampaignLevel('level_1')
+        ..givenACampaignLevel('level_2');
+      await api.givenTheLevelSelectScreenIsOpen();
+
+      // level_1 es el primer nivel desbloqueado → lleva el marcador "jugar".
+      api.thenTheCurrentLevelMarkerShouldBeShown();
+    });
+
+    testWidgets('should_not_mark_a_current_level_when_all_are_completed',
+        (tester) async {
+      final api = LevelSelectScreenTestApi(tester);
+      api.givenACampaignLevel('level_1');
+      await api.givenLevelIsCompleted('level_1', stars: 3);
+      await api.givenTheLevelSelectScreenIsOpen();
+
+      api.thenTheCurrentLevelMarkerShouldNotBeShown();
+    });
   });
 
   group('LevelSelectScreen — interaction', () {
