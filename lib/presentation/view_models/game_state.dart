@@ -31,6 +31,14 @@ class GameState {
   /// true si en la cola de campaña hay un nivel después del actual.
   final bool hasNextLevel;
 
+  /// Mientras es true, la transición observable a [GameStatus.levelCleared] se
+  /// retiene: [status] reporta `playing` aunque el Board ya esté vacío. Da
+  /// tiempo a que la animación de escape de la última flecha termine en
+  /// BoardView antes de que GameScreen tape el tablero con el overlay de
+  /// victoria. El estado de dominio (Board vacío, puntuación registrada) sigue
+  /// siendo correcto y síncrono; solo se difiere lo que la UI observa.
+  final bool deferLevelCleared;
+
   const GameState({
     this.board,
     this.currentLevelId,
@@ -42,11 +50,22 @@ class GameState {
     this.isMuted = false,
     this.lastResult,
     this.hasNextLevel = false,
+    this.deferLevelCleared = false,
   });
 
   const GameState.initial() : this();
 
-  GameStatus get status => board?.status ?? GameStatus.playing;
+  /// Estado observable por la UI. Cuando [deferLevelCleared] está activo,
+  /// enmascara `levelCleared` como `playing` durante la ventana de animación
+  /// de escape, de modo que el overlay de victoria no aparezca antes de que la
+  /// flecha termine de salir visualmente del tablero.
+  GameStatus get status {
+    final raw = board?.status ?? GameStatus.playing;
+    if (deferLevelCleared && raw == GameStatus.levelCleared) {
+      return GameStatus.playing;
+    }
+    return raw;
+  }
   Lives get lives => board?.lives ?? Lives();
   MoveCount get moves => board?.moves ?? MoveCount();
   int get arrowCount => board?.arrowCount ?? 0;
@@ -66,6 +85,7 @@ class GameState {
     LevelResult? lastResult,
     bool clearResult = false,
     bool? hasNextLevel,
+    bool? deferLevelCleared,
   }) {
     return GameState(
       board: board ?? this.board,
@@ -79,6 +99,7 @@ class GameState {
       isMuted: isMuted ?? this.isMuted,
       lastResult: clearResult ? null : (lastResult ?? this.lastResult),
       hasNextLevel: hasNextLevel ?? this.hasNextLevel,
+      deferLevelCleared: deferLevelCleared ?? this.deferLevelCleared,
     );
   }
 }
