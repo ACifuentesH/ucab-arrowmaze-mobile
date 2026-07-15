@@ -14,6 +14,8 @@ import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
 import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/ports/i_token_storage.dart';
 import 'package:arrow_maze/application/ports/i_user_storage.dart';
+import 'package:arrow_maze/application/proxies/caching_use_case_proxy.dart';
+import 'package:arrow_maze/application/proxies/exception_handling_proxy.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
@@ -197,16 +199,6 @@ final generateLevelViewModelProvider =
 );
 
 // ── Infraestructura: apiClient (puerto en application, adapter http) ─────────
-//
-// NOTA (progress-sync-integration): al momento de integrar esta rama,
-// `feature/aop-extra-aspects` (ExceptionHandlingApiClientProxy sobre
-// apiClientProvider, CachingUseCaseProxy sobre getLeaderboardUseCaseProvider)
-// todavía NO estaba mergeado a develop — solo existe UseCaseLoggerProxy
-// (arriba, sobre removeArrowUseCaseProvider). Si esos proxies aparecen más
-// adelante, apiClientProvider/getLeaderboardUseCaseProvider deben seguir
-// envolviendo la implementación real con ellos; no dejar caer el wrapping
-// silenciosamente (ver AI_USAGE.md — ya ha pasado dos veces en este repo).
-
 final httpClientProvider = Provider<http.Client>((_) => http.Client());
 
 final tokenStorageProvider = Provider<ITokenStorage>(
@@ -217,11 +209,16 @@ final userStorageProvider = Provider<IUserStorage>(
   (ref) => SharedPrefsUserStorage(ref.read(sharedPreferencesProvider)),
 );
 
+// AOP: ExceptionHandlingApiClientProxy centraliza el manejo de errores de red
+// (mapeo uniforme a ApiError + reintento de fallos transitorios) sobre el
+// adapter HTTP real, de forma transparente para todos los casos de uso.
 final apiClientProvider = Provider<IApiClient>(
-  (ref) => HttpApiClient(
-    httpClient: ref.read(httpClientProvider),
-    tokenStorage: ref.read(tokenStorageProvider),
-    baseUrl: ApiConfig.baseUrl,
+  (ref) => ExceptionHandlingApiClientProxy(
+    delegate: HttpApiClient(
+      httpClient: ref.read(httpClientProvider),
+      tokenStorage: ref.read(tokenStorageProvider),
+      baseUrl: ApiConfig.baseUrl,
+    ),
   ),
 );
 
@@ -260,8 +257,13 @@ final sessionCleanupProvider = Provider<ISessionCleanup>(
   (ref) => _RiverpodSessionCleanup(ref),
 );
 
+// AOP: CachingUseCaseProxy memoiza el leaderboard por (levelId, limit) durante
+// un TTL corto, evitando golpear la red en cada refresco de la pantalla.
 final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
-  (ref) => GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
+  (ref) => CachingUseCaseProxy(
+    delegate: GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
+    ttl: const Duration(seconds: 30),
+  ),
 );
 
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
