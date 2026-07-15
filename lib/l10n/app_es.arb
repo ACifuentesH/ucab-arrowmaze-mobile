@@ -32,5 +32,10 @@
   "accountTooltip": "Cuenta",
   "loginButton": "Login",
   "logoutButton": "CERRAR SESIÓN",
-  "accountGreeting": "Hola, {username}"
+  "accountGreeting": "Hola, {username}",
+  "loginPromptTitle": "¿Quieres guardar tu progreso?",
+  "loginPromptSubtitle": "Inicia sesión o crea una cuenta para sincronizar tus niveles y puntuaciones. También puedes seguir sin cuenta.",
+  "loginPromptLoginButton": "Iniciar sesión",
+  "loginPromptRegisterButton": "Crear cuenta",
+  "loginPromptGuestButton": "Continuar como invitado"
 }

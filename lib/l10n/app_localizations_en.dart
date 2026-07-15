@@ -112,4 +112,20 @@ class AppLocalizationsEn extends AppLocalizations {
   String accountGreeting(String username) {
     return 'Hi, $username';
   }
+
+  @override
+  String get loginPromptTitle => 'Want to save your progress?';
+
+  @override
+  String get loginPromptSubtitle =>
+      'Log in or create an account to sync your levels and scores. You can also keep playing without one.';
+
+  @override
+  String get loginPromptLoginButton => 'Log in';
+
+  @override
+  String get loginPromptRegisterButton => 'Create account';
+
+  @override
+  String get loginPromptGuestButton => 'Continue as guest';
 }
