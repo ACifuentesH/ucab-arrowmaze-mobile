@@ -101,4 +101,16 @@ class LevelSelectScreenTestApi {
 
   void thenFilledStarsShouldBeShown({required int count}) =>
       expect(find.byIcon(Icons.star_rounded), findsNWidgets(count));
+
+  /// El marcador "estás aquí / jugar" que señala el siguiente nivel jugable
+  /// (usa el icono de play sobre el nodo actual del sendero).
+  void thenTheCurrentLevelMarkerShouldBeShown() =>
+      expect(find.byIcon(Icons.play_arrow_rounded), findsOneWidget);
+
+  void thenTheCurrentLevelMarkerShouldNotBeShown() =>
+      expect(find.byIcon(Icons.play_arrow_rounded), findsNothing);
+
+  /// Los nodos completados se marcan con un check en lugar del número.
+  void thenCompletedChecksShouldBeShown({required int count}) =>
+      expect(find.byIcon(Icons.check_rounded), findsNWidgets(count));
 }
