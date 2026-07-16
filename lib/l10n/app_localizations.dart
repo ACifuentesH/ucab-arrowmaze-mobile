@@ -128,6 +128,36 @@ abstract class AppLocalizations {
   /// **'SURVIVAL MODE'**
   String get survivalModeButton;
 
+  /// Title of the survival mode leaderboard screen
+  ///
+  /// In en, this message translates to:
+  /// **'Survival Leaderboard'**
+  String get survivalLeaderboardTitle;
+
+  /// Empty state when survival leaderboard has no entries
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get survivalLeaderboardEmpty;
+
+  /// Friendly error when survival leaderboard fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the survival ranking. Check your connection and try again.'**
+  String get survivalLeaderboardError;
+
+  /// Retry button on survival leaderboard error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get survivalLeaderboardRetry;
+
+  /// Label under the boards-solved count on a survival ranking row
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{board} other{boards}}'**
+  String survivalBoardsSolved(int count);
+
   /// Title of the settings screen
   ///
   /// In en, this message translates to:
