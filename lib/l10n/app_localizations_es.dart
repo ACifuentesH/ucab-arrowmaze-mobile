@@ -128,4 +128,8 @@ class AppLocalizationsEs extends AppLocalizations {
 
   @override
   String get loginPromptGuestButton => 'Continuar como invitado';
+
+  @override
+  String get error_invalid_email =>
+      'El formato del correo electrónico no es válido.';
 }

@@ -11,7 +11,7 @@ import 'package:arrow_maze/application/dtos/progress_update.dart';
 ///    devuelven el `data` tipado o lanzan un ApiError.
 ///  - register/login guardan el token; getProgress/putProgress lo adjuntan
 ///    como `Authorization: Bearer <token>`.
-///  - Errores 401/404/409/422/500 → subclases de ApiError.
+///  - Errores 401/404/409/400|422/500 → subclases de ApiError.
 abstract interface class IApiClient {
   /// POST /auth/register — guarda el token al tener éxito.
   Future<AuthSession> register({

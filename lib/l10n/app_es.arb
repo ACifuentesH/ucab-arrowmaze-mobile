@@ -37,5 +37,6 @@
   "loginPromptSubtitle": "Inicia sesión o crea una cuenta para sincronizar tus niveles y puntuaciones. También puedes seguir sin cuenta.",
   "loginPromptLoginButton": "Iniciar sesión",
   "loginPromptRegisterButton": "Crear cuenta",
-  "loginPromptGuestButton": "Continuar como invitado"
+  "loginPromptGuestButton": "Continuar como invitado",
+  "error_invalid_email": "El formato del correo electrónico no es válido."
 }

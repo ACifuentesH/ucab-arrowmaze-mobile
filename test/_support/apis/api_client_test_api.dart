@@ -8,6 +8,7 @@ import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/builders/level_definition.dart';
+import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
 
 import '../fakes/fake_token_storage.dart';
@@ -130,6 +131,11 @@ class ApiClientTestApi {
 
   void thenErrorShouldBe<T>() {
     expect(_error, isA<T>());
+  }
+
+  void thenErrorMessageShouldBe(String message) {
+    expect(_error, isA<ApiError>());
+    expect((_error! as ApiError).message, equals(message));
   }
 
   void thenNoErrorShouldOccur() => expect(_error, isNull);

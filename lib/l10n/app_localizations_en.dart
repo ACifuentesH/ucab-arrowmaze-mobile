@@ -128,4 +128,7 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get loginPromptGuestButton => 'Continue as guest';
+
+  @override
+  String get error_invalid_email => 'The email address format is invalid.';
 }

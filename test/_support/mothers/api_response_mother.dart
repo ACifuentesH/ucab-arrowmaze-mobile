@@ -84,4 +84,18 @@ class ApiResponseMother {
   /// Error genérico del backend.
   static Map<String, dynamic> error(String message) =>
       {'success': false, 'message': message};
+
+  /// 400 de validación con `details` (paths / regex), como emite el backend.
+  static Map<String, dynamic> validationErrorWithEmailDetails() => {
+        'success': false,
+        'message': 'Validation failed',
+        'details': [
+          {
+            'path': ['email'],
+            'message': 'Invalid string',
+            'validation': 'regex',
+            'regex': r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+          },
+        ],
+      };
 }

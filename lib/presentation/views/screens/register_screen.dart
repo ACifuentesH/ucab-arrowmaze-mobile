@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 
 /// Pantalla de registro conectada a [AuthViewModel].
@@ -76,10 +77,12 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     ref.read(authViewModelProvider.notifier).clearError();
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
+    final l10n = AppLocalizations.of(context)!;
     await ref.read(authViewModelProvider.notifier).register(
           username: _usernameController.text,
           email: _emailController.text,
           password: _passwordController.text,
+          l10n: l10n,
         );
   }
 
