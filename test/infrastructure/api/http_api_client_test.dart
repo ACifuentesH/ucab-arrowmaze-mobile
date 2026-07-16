@@ -62,6 +62,19 @@ void main() {
           .thenErrorShouldBe<ValidationError>();
     });
 
+    test(
+        'should_map_400_email_details_to_invalid_email_validation_code',
+        () async {
+      (await ApiClientTestApi()
+              .givenServerResponds(
+                400,
+                ApiResponseMother.validationErrorWithEmailDetails(),
+              )
+              .whenLoggingIn())
+        ..thenErrorShouldBe<ValidationError>()
+        ..thenErrorMessageShouldBe('invalid_email');
+    });
+
     test('should_fail_with_server_error_when_backend_breaks', () async {
       (await ApiClientTestApi()
               .givenServerResponds(

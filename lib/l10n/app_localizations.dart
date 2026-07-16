@@ -325,6 +325,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue as guest'**
   String get loginPromptGuestButton;
+
+  /// Banner message when the API rejects the email format (validation code invalid_email)
+  ///
+  /// In en, this message translates to:
+  /// **'The email address format is invalid.'**
+  String get error_invalid_email;
 }
 
 class _AppLocalizationsDelegate

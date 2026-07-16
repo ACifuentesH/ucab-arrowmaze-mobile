@@ -18,7 +18,7 @@ import 'package:arrow_maze/application/ports/i_token_storage.dart';
 ///  - Construir URLs de /auth, /progress, /leaderboard/:levelId, /levels.
 ///  - Desempaquetar el envelope `{ success, data, message }`.
 ///  - Adjuntar `Authorization: Bearer <token>` solo en rutas protegidas.
-///  - Mapear 401/404/409/422/500 → ApiError tipado.
+///  - Mapear 401/404/409/400|422/500 → ApiError tipado.
 ///  - Guardar el token vía [ITokenStorage] tras register/login.
 class HttpApiClient implements IApiClient {
   final http.Client _http;
@@ -186,14 +186,82 @@ class HttpApiClient implements IApiClient {
       return envelope['data'];
     }
 
-    final message =
-        (envelope['message'] as String?) ?? 'Unexpected API error';
+    final message = _envelopeMessage(envelope);
     throw switch (response.statusCode) {
       401 => UnauthorizedError(message),
       404 => NotFoundError(message),
       409 => ConflictError(message),
-      422 => ValidationError(message),
+      400 || 422 => ValidationError(_validationCode(envelope, message)),
       _ => ServerError(message),
     };
+  }
+
+  /// Extrae un texto de mensaje usable del envelope (string, lista, etc.).
+  String _envelopeMessage(Map<String, dynamic> envelope) {
+    final raw = envelope['message'];
+    if (raw is String && raw.isNotEmpty) return raw;
+    if (raw is List && raw.isNotEmpty) {
+      return raw.map((e) => '$e').join('; ');
+    }
+    return 'Unexpected API error';
+  }
+
+  /// Normaliza errores de validación a códigos cortos de aplicación.
+  ///
+  /// El backend puede devolver `details`/`errors` con paths, regexes y
+  /// mensajes largos; la UI nunca debe ver ese JSON crudo.
+  String _validationCode(Map<String, dynamic> envelope, String fallback) {
+    final details = envelope['details'] ?? envelope['errors'];
+    if (details is List) {
+      for (final item in details) {
+        if (item is Map && _looksLikeEmailValidation(item)) {
+          return 'invalid_email';
+        }
+      }
+    }
+
+    final lower = fallback.toLowerCase();
+    if (lower.contains('email') &&
+        (lower.contains('invalid') ||
+            lower.contains('valid') ||
+            lower.contains('format') ||
+            lower.contains('regex') ||
+            lower.contains('match'))) {
+      return 'invalid_email';
+    }
+
+    // Mensaje ya corto / tipo código: preservarlo.
+    if (!fallback.contains('{') &&
+        !fallback.contains('[') &&
+        fallback.length <= 64) {
+      return fallback;
+    }
+
+    return 'validation_error';
+  }
+
+  bool _looksLikeEmailValidation(Map<dynamic, dynamic> item) {
+    final path = item['path'] ?? item['field'] ?? item['param'] ?? item['property'];
+    final pathStr =
+        path is List ? path.map((e) => '$e').join('.') : '$path'.toLowerCase();
+    if (pathStr.toLowerCase().contains('email')) return true;
+
+    final validation =
+        '${item['validation'] ?? item['code'] ?? item['keyword'] ?? ''}'
+            .toLowerCase();
+    if (validation.contains('email')) return true;
+
+    final msg = '${item['message'] ?? item['msg'] ?? ''}'.toLowerCase();
+    if (msg.contains('email')) return true;
+
+    // Detalles con expresión regular suelen acompañar fallos de formato.
+    final pattern =
+        '${item['regex'] ?? item['pattern'] ?? item['expected'] ?? ''}';
+    if (pattern.isNotEmpty &&
+        (pathStr.toLowerCase().contains('email') || msg.contains('email'))) {
+      return true;
+    }
+
+    return false;
   }
 }

@@ -169,5 +169,9 @@
   "loginPromptGuestButton": "Continue as guest",
   "@loginPromptGuestButton": {
     "description": "Button in the login prompt sheet that dismisses it and proceeds without logging in"
+  },
+  "error_invalid_email": "The email address format is invalid.",
+  "@error_invalid_email": {
+    "description": "Banner message when the API rejects the email format (validation code invalid_email)"
   }
 }

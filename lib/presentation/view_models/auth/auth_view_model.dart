@@ -9,6 +9,7 @@ import 'package:arrow_maze/application/use_cases/auth/login_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 
 class AuthViewModel extends StateNotifier<AuthState> {
@@ -62,7 +63,11 @@ class AuthViewModel extends StateNotifier<AuthState> {
     }
   }
 
-  Future<void> login(String email, String password) async {
+  Future<void> login(
+    String email,
+    String password, {
+    AppLocalizations? l10n,
+  }) async {
     state = const AuthState.loading();
 
     try {
@@ -70,6 +75,10 @@ class AuthViewModel extends StateNotifier<AuthState> {
       // pull sobrescribe el progreso efímero de invitado con el remoto.
       await _syncProgressAfterAuth();
       state = AuthState.authenticated(user);
+    } on ValidationError catch (e) {
+      state = AuthState.unauthenticated(
+        errorMessage: _localizeValidationError(e, l10n),
+      );
     } on ApiError catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.message);
     } catch (e) {
@@ -81,6 +90,7 @@ class AuthViewModel extends StateNotifier<AuthState> {
     required String username,
     required String email,
     required String password,
+    AppLocalizations? l10n,
   }) async {
     state = const AuthState.loading();
 
@@ -92,11 +102,28 @@ class AuthViewModel extends StateNotifier<AuthState> {
       );
       await _syncProgressAfterAuth();
       state = AuthState.authenticated(user);
+    } on ValidationError catch (e) {
+      state = AuthState.unauthenticated(
+        errorMessage: _localizeValidationError(e, l10n),
+      );
     } on ApiError catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.message);
     } catch (e) {
       state = AuthState.unauthenticated(errorMessage: e.toString());
     }
+  }
+
+  /// Traduce códigos de [ValidationError] (ej. `invalid_email`) a texto UI.
+  ///
+  /// [l10n] se inyecta desde la pantalla (sin acoplar el VM a BuildContext).
+  String _localizeValidationError(
+    ValidationError error,
+    AppLocalizations? l10n,
+  ) {
+    if (l10n != null && error.message == 'invalid_email') {
+      return l10n.error_invalid_email;
+    }
+    return error.message;
   }
 
   void clearError() {
