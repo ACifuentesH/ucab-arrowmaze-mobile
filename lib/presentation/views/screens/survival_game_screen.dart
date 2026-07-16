@@ -85,6 +85,7 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
                         gameState: gs,
                         onToggleMute: ctrl.toggleMute,
                         showLevelTimer: false,
+                        showLives: false,
                       ),
                       Expanded(
                         child: Padding(

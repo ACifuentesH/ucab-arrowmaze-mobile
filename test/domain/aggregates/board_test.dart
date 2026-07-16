@@ -39,6 +39,17 @@ void main() {
           .thenGameShouldBeOver();
     });
 
+    test(
+        'should_not_lose_a_life_when_blocked_without_life_penalty',
+        () {
+      RemoveArrowTestApi()
+          .givenABoardWithBlockedArrow(lives: 1)
+          .whenArrowIsTappedWithoutLifePenalty('a1')
+          ..thenMoveShouldBeRejected()
+          ..thenALifeShouldBeLost(to: 1)
+          ..thenGameShouldStillBePlaying();
+    });
+
     test('should_free_blocked_arrow_when_its_blocker_escapes', () {
       RemoveArrowTestApi()
           .givenABoardWithBlockedArrow()

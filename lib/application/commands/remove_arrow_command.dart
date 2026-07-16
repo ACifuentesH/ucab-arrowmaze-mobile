@@ -6,18 +6,26 @@ import 'package:arrow_maze/application/commands/i_arrow_command.dart';
 class RemoveArrowCommand implements IArrowCommand {
   final Board _board;
   final String _arrowId;
+  final bool _applyLifePenalty;
 
   /// Flecha guardada antes de la extracción; permite restaurarla en undo().
   Arrow? _savedArrow;
 
-  RemoveArrowCommand({required Board board, required String arrowId})
-      : _board = board,
-        _arrowId = arrowId;
+  RemoveArrowCommand({
+    required Board board,
+    required String arrowId,
+    bool applyLifePenalty = true,
+  })  : _board = board,
+        _arrowId = arrowId,
+        _applyLifePenalty = applyLifePenalty;
 
   @override
   bool execute() {
     _savedArrow = _board.arrowById(_arrowId);
-    return _board.tryRemoveArrow(_arrowId);
+    return _board.tryRemoveArrow(
+      _arrowId,
+      applyLifePenalty: _applyLifePenalty,
+    );
   }
 
   @override
