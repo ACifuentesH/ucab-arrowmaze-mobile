@@ -3,7 +3,9 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/config/providers.dart';
+import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/view_models/survival/survival_state.dart';
+import 'package:arrow_maze/presentation/views/screens/survival_leaderboard_screen.dart';
 import 'package:arrow_maze/presentation/views/widgets/board_view.dart';
 import 'package:arrow_maze/presentation/views/widgets/hud_view.dart';
 
@@ -28,13 +30,31 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
         .start(durationSeconds: widget.durationSeconds));
   }
 
+  void _playAgain() {
+    ref.invalidate(survivalViewModelProvider);
+    Future.microtask(() {
+      if (!mounted) return;
+      ref
+          .read(survivalViewModelProvider.notifier)
+          .start(durationSeconds: widget.durationSeconds);
+    });
+  }
+
+  void _viewRanking() {
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const SurvivalLeaderboardScreen()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final survival = ref.watch(survivalViewModelProvider);
     final gs = ref.watch(gameViewModelProvider);
     final ctrl = ref.read(gameViewModelProvider.notifier);
 
-    final urgent = survival.timeLeft < 10 && survival.phase == SurvivalPhase.running;
+    final urgent =
+        survival.timeLeft < 10 && survival.phase == SurvivalPhase.running;
 
     return Scaffold(
       backgroundColor: _t.background,
@@ -50,8 +70,7 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
               ),
               Expanded(
                 child: AbsorbPointer(
-                  absorbing:
-                      survival.phase == SurvivalPhase.submitting ||
+                  absorbing: survival.phase == SurvivalPhase.submitting ||
                       survival.phase == SurvivalPhase.ended ||
                       survival.phase == SurvivalPhase.success ||
                       survival.phase == SurvivalPhase.error,
@@ -91,6 +110,8 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
               onRetrySubmit: () => ref
                   .read(survivalViewModelProvider.notifier)
                   .start(durationSeconds: widget.durationSeconds),
+              onPlayAgain: _playAgain,
+              onViewRanking: _viewRanking,
             ),
         ],
       ),
@@ -159,14 +180,23 @@ class _SurvivalOverlay extends StatelessWidget {
     required this.survival,
     required this.onBack,
     required this.onRetrySubmit,
+    required this.onPlayAgain,
+    required this.onViewRanking,
   });
 
   final SurvivalState survival;
   final VoidCallback onBack;
   final VoidCallback onRetrySubmit;
+  final VoidCallback onPlayAgain;
+  final VoidCallback onViewRanking;
+
+  static const ThemeConfig _t = ThemeConfig.dark;
+  static const Color _accent = Color(0xFFFF6B35);
 
   @override
   Widget build(BuildContext context) {
+    final l = AppLocalizations.of(context)!;
+
     final children = <Widget>[
       Icon(
         Icons.hourglass_bottom_rounded,
@@ -221,36 +251,71 @@ class _SurvivalOverlay extends StatelessWidget {
       ]);
     }
 
-    final actions = <Widget>[
-      if (survival.phase == SurvivalPhase.success) ...[
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Colors.white),
-          onPressed: onBack,
-          child: const Text(
-            'Volver',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
+    final Widget actions;
+    if (survival.phase == SurvivalPhase.success) {
+      actions = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: _accent,
+                foregroundColor: _t.onPrimary,
+                minimumSize: const Size.fromHeight(48),
+                textStyle: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onPlayAgain,
+              child: Text(l.survivalPlayAgain),
+            ),
           ),
-        ),
-      ] else if (survival.phase == SurvivalPhase.error) ...[
-        OutlinedButton(
-          style: OutlinedButton.styleFrom(
-            foregroundColor: Colors.white,
-            side: const BorderSide(color: Colors.white),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white),
+                minimumSize: const Size.fromHeight(48),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onViewRanking,
+              child: Text(l.survivalViewRanking),
+            ),
           ),
-          onPressed: onRetrySubmit,
-          child: const Text('Reintentar'),
+        ],
+      );
+    } else if (survival.phase == SurvivalPhase.error) {
+      actions = OutlinedButton(
+        style: OutlinedButton.styleFrom(
+          foregroundColor: Colors.white,
+          side: const BorderSide(color: Colors.white),
         ),
-      ] else ...[
-        FilledButton(
-          style: FilledButton.styleFrom(backgroundColor: Colors.white),
-          onPressed: onBack,
-          child: const Text(
-            'OK',
-            style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
-          ),
+        onPressed: onRetrySubmit,
+        child: Text(l.survivalLeaderboardRetry),
+      );
+    } else {
+      actions = FilledButton(
+        style: FilledButton.styleFrom(backgroundColor: Colors.white),
+        onPressed: onBack,
+        child: const Text(
+          'OK',
+          style: TextStyle(color: Colors.black, fontWeight: FontWeight.bold),
         ),
-      ],
-    ];
+      );
+    }
 
     return AbsorbPointer(
       absorbing: false,
@@ -258,20 +323,19 @@ class _SurvivalOverlay extends StatelessWidget {
         color: Colors.black.withValues(alpha: 0.58),
         padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 16),
         child: Center(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              ...children,
-              const SizedBox(height: 24),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: actions,
-              ),
-            ],
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 320),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                ...children,
+                const SizedBox(height: 24),
+                actions,
+              ],
+            ),
           ),
         ),
       ),
     );
   }
 }
-

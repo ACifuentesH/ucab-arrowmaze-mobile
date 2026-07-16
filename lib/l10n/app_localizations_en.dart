@@ -37,6 +37,12 @@ class AppLocalizationsEn extends AppLocalizations {
   String get survivalLeaderboardRetry => 'Retry';
 
   @override
+  String get survivalPlayAgain => 'Play again';
+
+  @override
+  String get survivalViewRanking => 'View ranking';
+
+  @override
   String survivalBoardsSolved(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,

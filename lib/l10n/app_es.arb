@@ -9,6 +9,8 @@
   "survivalLeaderboardEmpty": "Aún no hay marcas registradas",
   "survivalLeaderboardError": "No se pudo cargar el ranking de supervivencia. Revisa tu conexión e inténtalo de nuevo.",
   "survivalLeaderboardRetry": "Reintentar",
+  "survivalPlayAgain": "Jugar de nuevo",
+  "survivalViewRanking": "Ver Ranking",
   "survivalBoardsSolved": "{count, plural, =1{tablero} other{tableros}}",
   "settingsTitle": "Ajustes",
   "settingsTooltip": "Ajustes",

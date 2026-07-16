@@ -36,6 +36,14 @@
   "@survivalLeaderboardRetry": {
     "description": "Retry button on survival leaderboard error state"
   },
+  "survivalPlayAgain": "Play again",
+  "@survivalPlayAgain": {
+    "description": "Primary button on survival end overlay to start a new run"
+  },
+  "survivalViewRanking": "View ranking",
+  "@survivalViewRanking": {
+    "description": "Secondary button on survival end overlay to open the leaderboard"
+  },
   "survivalBoardsSolved": "{count, plural, =1{board} other{boards}}",
   "@survivalBoardsSolved": {
     "description": "Label under the boards-solved count on a survival ranking row",

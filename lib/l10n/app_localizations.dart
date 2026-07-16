@@ -152,6 +152,18 @@ abstract class AppLocalizations {
   /// **'Retry'**
   String get survivalLeaderboardRetry;
 
+  /// Primary button on survival end overlay to start a new run
+  ///
+  /// In en, this message translates to:
+  /// **'Play again'**
+  String get survivalPlayAgain;
+
+  /// Secondary button on survival end overlay to open the leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'View ranking'**
+  String get survivalViewRanking;
+
   /// Label under the boards-solved count on a survival ranking row
   ///
   /// In en, this message translates to:
