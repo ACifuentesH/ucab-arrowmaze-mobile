@@ -5,6 +5,7 @@ import 'package:arrow_maze/domain/game_status.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
+import 'package:arrow_maze/presentation/view_models/game_state.dart';
 import 'package:arrow_maze/presentation/views/widgets/board_view.dart';
 import 'package:arrow_maze/presentation/views/widgets/hud_view.dart';
 
@@ -84,7 +85,8 @@ class GameScreen extends ConsumerWidget {
               ),
             ],
           ),
-          if (gs.status == GameStatus.levelCleared)
+          if (gs.mode != GamePlayMode.survival &&
+              gs.status == GameStatus.levelCleared)
             _VictoryOverlay(
               result: gs.lastResult,
               hasNext: gs.hasNextLevel,

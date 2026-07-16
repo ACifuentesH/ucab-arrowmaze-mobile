@@ -8,6 +8,8 @@ import 'package:arrow_maze/application/dtos/auth_user.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
+import 'package:arrow_maze/application/dtos/submit_survival_input.dart';
+import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/ports/i_token_storage.dart';
@@ -125,6 +127,36 @@ class HttpApiClient implements IApiClient {
   Future<LevelDefinition> getLevelById(String id) async {
     final data = await _request('GET', '/levels/$id');
     return LevelDefinition.fromBackendJson(data as Map<String, dynamic>);
+  }
+
+  // ── Survival ──────────────────────────────────────────────────────────────
+
+  @override
+  Future<void> submitSurvival(SubmitSurvivalInput input) async {
+    await _request(
+      'POST',
+      '/survival',
+      body: input.toJson(),
+      authenticated: true,
+    );
+  }
+
+  @override
+  Future<List<SurvivalEntryDto>> getSurvivalLeaderboard({
+    required int durationSeconds,
+    int limit = 10,
+  }) async {
+    final data = await _request(
+      'GET',
+      '/survival/leaderboard',
+      query: {
+        'durationSeconds': '$durationSeconds',
+        'limit': '$limit',
+      },
+    );
+    return (data as List<dynamic>)
+        .map((e) => SurvivalEntryDto.fromJson(e as Map<String, dynamic>))
+        .toList();
   }
 
   // ── Núcleo HTTP ───────────────────────────────────────────────────────────

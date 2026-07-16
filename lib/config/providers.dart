@@ -14,6 +14,7 @@ import 'package:arrow_maze/application/ports/i_player_progress_repository.dart';
 import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
 import 'package:arrow_maze/application/ports/i_token_storage.dart';
 import 'package:arrow_maze/application/ports/i_user_storage.dart';
+import 'package:arrow_maze/application/ports/i_survival_repository.dart';
 import 'package:arrow_maze/application/proxies/caching_use_case_proxy.dart';
 import 'package:arrow_maze/application/proxies/exception_handling_proxy.dart';
 import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
@@ -33,6 +34,8 @@ import 'package:arrow_maze/application/use_cases/auth/logout_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/register_use_case.dart';
 import 'package:arrow_maze/application/use_cases/auth/restore_session_use_case.dart';
 import 'package:arrow_maze/application/use_cases/leaderboard/get_leaderboard_use_case.dart';
+import 'package:arrow_maze/application/use_cases/survival/get_survival_leaderboard_use_case.dart';
+import 'package:arrow_maze/application/use_cases/survival/submit_survival_run_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/hydrate_progress_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/push_progress_use_case.dart';
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
@@ -51,6 +54,7 @@ import 'package:arrow_maze/infrastructure/repositories/shared_prefs_generated_le
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progress_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_token_storage.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_user_storage.dart';
+import 'package:arrow_maze/infrastructure/repositories/survival_repository_impl.dart';
 import 'package:arrow_maze/infrastructure/services/audio_service.dart';
 import 'package:arrow_maze/infrastructure/services/groq_level_generator_service.dart';
 import 'package:arrow_maze/infrastructure/services/stopwatch_time_service.dart';
@@ -63,6 +67,8 @@ import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
 import 'package:arrow_maze/presentation/view_models/leaderboard/leaderboard_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_state.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_view_model.dart';
+import 'package:arrow_maze/presentation/view_models/survival/survival_state.dart';
+import 'package:arrow_maze/presentation/view_models/survival/survival_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/settings/settings_state.dart';
 import 'package:arrow_maze/presentation/view_models/settings/settings_view_model.dart';
 
@@ -114,7 +120,7 @@ final audioServiceProvider = Provider<IAudioService>(
 
 // ?? Infraestructura: AI generator ????????????????????????????????????????????
 
-/// La API key se inyecta vía --dart-define=GROQ_API_KEY=gsk_...
+/// La API key se inyecta v?a --dart-define=GROQ_API_KEY=gsk_...
 /// Ejemplo: flutter run --dart-define=GROQ_API_KEY=gsk_xxxx
 const _groqApiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
 
@@ -122,7 +128,7 @@ final levelGeneratorServiceProvider = Provider<ILevelGeneratorService>(
   (_) => GroqLevelGeneratorService(apiKey: _groqApiKey),
 );
 
-// ?? Infraestructura: catálogo (Strategy + Composite) ?????????????????????????
+// ?? Infraestructura: cat?logo (Strategy + Composite) ?????????????????????????
 
 final levelCatalogServiceProvider = Provider<ILevelCatalogService>(
   (ref) => CompositeLevelCatalogService([
@@ -192,7 +198,7 @@ final getLevelCatalogUseCaseProvider =
   ).execute();
 });
 
-// ?? Notifier: generación de niveles ??????????????????????????????????????????
+// ?? Notifier: generaci?n de niveles ??????????????????????????????????????????
 
 final generateLevelViewModelProvider =
     StateNotifierProvider<GenerateLevelViewModel, GenerateLevelState>(
@@ -274,6 +280,25 @@ final leaderboardViewModelProvider =
   ),
 );
 
+// --- Survival (modo supervivencia) ---
+
+final survivalRepositoryProvider = Provider<ISurvivalRepository>(
+  (ref) => SurvivalRepositoryImpl(api: ref.read(apiClientProvider)),
+);
+
+final submitSurvivalRunUseCaseProvider = Provider<SubmitSurvivalRunUseCase>(
+  (ref) => SubmitSurvivalRunUseCase(
+    repository: ref.read(survivalRepositoryProvider),
+  ),
+);
+
+final getSurvivalLeaderboardUseCaseProvider =
+    Provider<GetSurvivalLeaderboardUseCase>(
+  (ref) => GetSurvivalLeaderboardUseCase(
+    repository: ref.read(survivalRepositoryProvider),
+  ),
+);
+
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
@@ -332,6 +357,29 @@ final gameViewModelProvider =
   ),
 );
 
+// --- SurvivalViewModel ---
+
+final survivalViewModelProvider =
+    StateNotifierProvider<SurvivalViewModel, SurvivalState>(
+  (ref) {
+    final game = ref.read(gameViewModelProvider.notifier);
+    final vm = SurvivalViewModel(
+      game: game,
+      submitSurvivalRun: ref.read(submitSurvivalRunUseCaseProvider),
+      levelCatalog: ref.read(levelCatalogServiceProvider),
+      audioService: ref.read(audioServiceProvider),
+    );
+
+    // Orquestacion: ante victoria/derrota del tablero, el superviviente
+    // carga automaticamente el siguiente nivel (sin overlays de campana).
+    ref.listen<GameState>(gameViewModelProvider, (_, next) {
+      vm.onGameStateChanged(next);
+    });
+
+    return vm;
+  },
+);
+
 // --- LevelSelectViewModel ---
 
 final levelSelectViewModelProvider =
@@ -350,9 +398,9 @@ final settingsViewModelProvider =
   ),
 );
 
-/// Adapter Riverpod: invalida estado en memoria al cerrar sesión, para que
-/// la UI refleje progreso vacío (invitado) sin acoplar el ViewModel de auth
-/// a Riverpod directamente (DIP vía [ISessionCleanup]).
+/// Adapter Riverpod: invalida estado en memoria al cerrar sesi?n, para que
+/// la UI refleje progreso vac?o (invitado) sin acoplar el ViewModel de auth
+/// a Riverpod directamente (DIP v?a [ISessionCleanup]).
 class _RiverpodSessionCleanup implements ISessionCleanup {
   const _RiverpodSessionCleanup(this._ref);
 

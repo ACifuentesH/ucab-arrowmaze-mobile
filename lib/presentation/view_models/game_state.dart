@@ -6,6 +6,8 @@ import 'package:arrow_maze/domain/value_objects/level_id.dart';
 import 'package:arrow_maze/domain/value_objects/lives.dart';
 import 'package:arrow_maze/domain/value_objects/move_count.dart';
 
+enum GamePlayMode { campaign, single, survival }
+
 /// Estado de vista inmutable que GameViewModel emite a la UI.
 class GameState {
   final Board? board;
@@ -38,6 +40,7 @@ class GameState {
   /// victoria. El estado de dominio (Board vacío, puntuación registrada) sigue
   /// siendo correcto y síncrono; solo se difiere lo que la UI observa.
   final bool deferLevelCleared;
+  final GamePlayMode mode;
 
   const GameState({
     this.board,
@@ -51,6 +54,7 @@ class GameState {
     this.lastResult,
     this.hasNextLevel = false,
     this.deferLevelCleared = false,
+    this.mode = GamePlayMode.single,
   });
 
   const GameState.initial() : this();
@@ -86,6 +90,7 @@ class GameState {
     bool clearResult = false,
     bool? hasNextLevel,
     bool? deferLevelCleared,
+    GamePlayMode? mode,
   }) {
     return GameState(
       board: board ?? this.board,
@@ -100,6 +105,7 @@ class GameState {
       lastResult: clearResult ? null : (lastResult ?? this.lastResult),
       hasNextLevel: hasNextLevel ?? this.hasNextLevel,
       deferLevelCleared: deferLevelCleared ?? this.deferLevelCleared,
+      mode: mode ?? this.mode,
     );
   }
 }

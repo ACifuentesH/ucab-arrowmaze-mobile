@@ -3,6 +3,8 @@ import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
+import 'package:arrow_maze/application/dtos/submit_survival_input.dart';
+import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 
 /// Puerto del cliente HTTP hacia ucab-arrowmaze-api (DIP).
 ///
@@ -46,4 +48,13 @@ abstract interface class IApiClient {
 
   /// GET /levels/:id (público). Lanza NotFoundError si no existe.
   Future<LevelDefinition> getLevelById(String id);
+
+  /// POST /survival (JWT).
+  Future<void> submitSurvival(SubmitSurvivalInput input);
+
+  /// GET /survival/leaderboard?durationSeconds=&limit= (público).
+  Future<List<SurvivalEntryDto>> getSurvivalLeaderboard({
+    required int durationSeconds,
+    int limit = 10,
+  });
 }
