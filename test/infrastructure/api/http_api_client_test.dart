@@ -1,5 +1,6 @@
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:arrow_maze/application/enums/difficulty.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 
 import '../../_support/apis/api_client_test_api.dart';
@@ -177,6 +178,91 @@ void main() {
                   404, ApiResponseMother.error('Level not found'))
               .whenGettingLevelById('nope'))
           .thenErrorShouldBe<NotFoundError>();
+    });
+  });
+
+  group('HttpApiClient — AI level generation', () {
+    test('should_post_prompt_and_difficulty_when_generating_a_level',
+        () async {
+      (await ApiClientTestApi()
+              .givenAStoredToken()
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelData())
+              .whenGeneratingLevel(shapeName: 'a heart'))
+          ..thenRequestShouldBe('POST', '/levels/generate')
+          ..thenRequestBodyFieldShouldContain('prompt', 'a heart')
+          ..thenRequestBodyFieldShouldContain('prompt', '16x16 grid')
+          ..thenRequestBodyFieldShouldContain('prompt', 'will be discarded')
+          ..thenRequestBodyFieldShouldBe('difficulty', 'medium');
+    });
+
+    test(
+        'should_translate_the_shape_to_the_origin_when_the_model_draws_it_off_center',
+        () async {
+      (await ApiClientTestApi()
+              .givenAStoredToken()
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelDataOffOrigin())
+              .whenGeneratingLevel())
+          .thenGeneratedLevelCellsShouldBe([
+        [0, 0],
+        [0, 1],
+        [1, 0],
+      ]);
+    });
+
+    test('should_send_authorization_header_when_generating_a_level',
+        () async {
+      (await ApiClientTestApi()
+              .givenAStoredToken('jwt-generate')
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelData())
+              .whenGeneratingLevel())
+          .thenAuthorizationHeaderShouldBe('Bearer jwt-generate');
+    });
+
+    test(
+        'should_build_a_level_definition_from_the_backend_blob_when_generating',
+        () async {
+      (await ApiClientTestApi()
+              .givenAStoredToken()
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelData())
+              .whenGeneratingLevel(shapeName: 'a heart'))
+          ..thenLevelShouldFollowContract()
+          ..thenGeneratedLevelNameShouldBe('a heart');
+    });
+
+    test(
+        'should_use_the_spec_lives_and_not_the_backend_ones_when_generating',
+        () async {
+      // El mother devuelve lives:5, pero el spec (dificultad media) manda
+      // 3 vidas — igual que el adaptador anterior, el backend nunca decide
+      // el balance del juego.
+      (await ApiClientTestApi()
+              .givenAStoredToken()
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelData())
+              .whenGeneratingLevel(difficulty: Difficulty.medium))
+          .thenGeneratedLevelLivesShouldBe(3);
+    });
+
+    test('should_require_a_stored_token_when_generating_a_level', () async {
+      (await ApiClientTestApi()
+              .givenServerResponds(
+                  200, ApiResponseMother.generatedLevelData())
+              .whenGeneratingLevel())
+          .thenErrorShouldBe<UnauthorizedError>();
+    });
+
+    test('should_fail_with_server_error_when_the_llm_fails_upstream',
+        () async {
+      (await ApiClientTestApi()
+              .givenAStoredToken()
+              .givenServerResponds(
+                  502, ApiResponseMother.error('Failed to generate level'))
+              .whenGeneratingLevel())
+          .thenErrorShouldBe<ServerError>();
     });
   });
 }

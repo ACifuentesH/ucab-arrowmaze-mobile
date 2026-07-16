@@ -18,7 +18,43 @@ class AppLocalizationsEn extends AppLocalizations {
   String get playButton => 'PLAY';
 
   @override
-  String get aiLevelBuilderButton => 'AI LEVEL BUILDER';
+  String get creativeButton => 'CREATIVE';
+
+  @override
+  String get survivalModeButton => 'SURVIVAL MODE';
+
+  @override
+  String get survivalLeaderboardTitle => 'Survival Leaderboard';
+
+  @override
+  String get survivalLeaderboardEmpty => 'No records yet';
+
+  @override
+  String get survivalLeaderboardError =>
+      'Could not load the survival ranking. Check your connection and try again.';
+
+  @override
+  String get survivalLeaderboardRetry => 'Retry';
+
+  @override
+  String get survivalPlayAgain => 'Play again';
+
+  @override
+  String get survivalViewRanking => 'View ranking';
+
+  @override
+  String get survivalBackToMenu => 'Back to menu';
+
+  @override
+  String survivalBoardsSolved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'boards',
+      one: 'board',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsTitle => 'Settings';

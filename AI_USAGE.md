@@ -286,6 +286,44 @@
 
 ---
 
+### Entry 018 — feature/ai-generation-backend-integration: cobertura total de flechas en ProceduralArrowPlacer
+
+**Task:** Pedido del dueño del proyecto sobre los niveles generados con IA: la silueta debe quedar COMPLETA de flechas — cada celda de la forma cubierta por alguna flecha, sin puntos vacíos — manteniendo la garantía existente de que el puzzle siempre es resoluble.
+
+**Prompt (paraphrase):** "Creo que la forma debería estar llena de flechas, la forma completa de flechas sin puntos vacíos."
+
+**Result obtained:**
+- **`ProceduralArrowPlacer` reescrito con estrategia de "pelado en orden de resolución"** (reemplaza la de "colocación aleatoria con corredor libre", que apuntaba a un `count` fijo ~16 y dejaba el resto de la silueta vacía). El nuevo algoritmo construye las flechas directamente en un orden de toque válido: en cada paso elige (al azar entre las candidatas) una cabeza cuyo rayo de escape no cruce ninguna celda aún sin pelar — las celdas peladas antes pertenecen a flechas que se tocan antes, así que estarán vacías cuando a esta le toque salir — y crece la cola (3–5 celdas, doblando) por el interior restante con heurística Warnsdorff (prefiere vecinas con menos vecinas libres, consumiendo callejones sin salida antes de que queden huérfanos). Celdas sueltas residuales se fusionan al final de la cola de una flecha adyacente — seguro porque una celda sin pelar hasta el final no está en el rayo de escape de ninguna flecha. Reintenta hasta 40 semillas derivadas (determinista dado el `Random` inyectado) y devuelve el intento de mayor cobertura.
+- **Nota de corrección clave:** la cola no puede caer jamás sobre el rayo de la propia cabeza (en `Board._isPathClear` la propia cola también bloquea) — queda garantizado gratis porque el rayo se valida sin celdas sin-pelar y la cola solo crece por celdas sin-pelar.
+- **Puerto `IArrowPlacer` sin `count`:** con cobertura total el parámetro perdió sentido; `place(cells, {random})`. `GenerateLevelUseCase` actualizado; `LevelSpec.arrowCount` eliminado (era una constante interna `_arrowCountHint = 16` del view model, no un control del usuario) junto con sus usos en `generate_level_view_model.dart` y 3 test-support APIs.
+- **Tests reescritos** (`procedural_arrow_placer_test.dart`, 9 casos): cobertura total en cuadrado 10×10 y en una forma con partes de 1 celda de ancho (paraguas, 10 semillas); **resolubilidad simulada replicando la regla exacta de `Board._isPathClear`** (recorre las flechas en el orden devuelto y exige rayo limpio, propia cola incluida); no-solape; adyacencia contigua del path; degradación elegante en la cruz de 5 celdas (geométricamente imposible de teselar: cualquier partición en caminos ≥2 deja brazos sueltos); forma de 1 celda → vacío; ids únicos.
+- **Verificación visual:** preview del teselado sobre una silueta real de gato 22×22 generada por el backend — 71 flechas, 270/270 celdas cubiertas, 69ms, largos 2–6, cabezas repartidas por toda la forma. `flutter analyze` sin errores nuevos; suite completa 251/251 en verde.
+
+**Team modifications:** Pendiente de revisión — el usuario validará visualmente desde la app y commiteará.
+
+**Lessons learned:** El truco del algoritmo viejo ("cada flecha nueva evita a las anteriores; se resuelve en orden inverso") y el nuevo ("cada flecha pelada solo exige rayo libre de lo no-pelado; se resuelve en orden de pelado") son el mismo invariante mirado desde los dos extremos — pero construir en orden de resolución permite llegar a densidad 100%, mientras que la colocación aleatoria se estanca porque exige corredores completamente libres en un tablero cada vez más lleno. Y no toda forma es teselable (la cruz de 5 celdas no lo es): un algoritmo de cobertura total necesita una política explícita de mejor-esfuerzo, no un `assert`.
+
+---
+
+### Entry 019 — feature/ai-generation-backend-integration: la generación con IA se muda al backend (el cliente ya no llama a Groq ni guarda ninguna API key)
+
+**Task:** El backend del equipo ya expone `POST /levels/generate` (ver `ucab-arrowmaze-api`, feature `feature/12-ai-level-generation`): recibe `{ prompt, difficulty? }`, llama al LLM (Anthropic) y devuelve la silueta `{ cells, arrows, lives?, timeLimitSeconds? }` sin persistir nada. Migrar el cliente para que use ese endpoint en vez de llamar a Groq directamente, eliminando la API key del frontend.
+
+**Result obtained:**
+- **Eliminados** `GroqLevelGeneratorService` (y su test) y `assets/prompts/level_generator.md` — ya no existe ninguna credencial de IA ni prompt de sistema en el cliente.
+- **`ApiLevelGeneratorService`** (nuevo, `infrastructure/services/`) implementa `ILevelGeneratorService` delegando en `IApiClient.generateLevel(spec)` — un adapter delgado, sin lógica propia.
+- **`IApiClient.generateLevel`** (nuevo método del puerto) + `HttpApiClient.generateLevel`: arma el prompt textual a partir de `LevelSpec` (solo pide la silueta; las 1-2 flechas que el backend exige por contrato se descartan) y normaliza el `cells` devuelto (traslada el bounding box a `(0,0)` — el modelo puede dibujar la silueta en cualquier esquina del grid pedido, y `BoardView` centra por bounding box completo, así que sin este recorte el tablero se ve descentrado y cambia de lugar en cada generación).
+- **`ExceptionHandlingApiClientProxy`** (el proxy AOP existente, ver Entry 011) extendido con el mismo método — la generación de niveles hereda gratis el reintento de fallos transitorios y el mapeo uniforme a `ApiError`.
+- **`GenerateLevelUseCase`** ya no cambia su forma (sigue orquestando generador → `IArrowPlacer` → `LevelBuilder` → repositorio), solo su generador inyectado.
+- **pubspec.yaml:** removida la entrada de assets `assets/prompts/` (ya no hay ningún prompt embebido en el cliente).
+- **Tests:** `ApiLevelGeneratorServiceTestApi` (nuevo) + su test; `HttpApiClientTest`/`ApiClientTestApi`/`ApiResponseMother`/`LevelDefinitionMother` actualizados para cubrir `generateLevel` (éxito, normalización de coordenadas, y los errores tipados heredados de `ExceptionHandlingApiClientProxy`). Suite completa 251/251, `flutter analyze --no-fatal-infos` sin regresiones (63 infos, mismo patrón preexistente `prefer_initializing_formals`).
+
+**Team modifications:** Pendiente de revisión — el dueño del proyecto validará generando un nivel real contra el backend desplegado antes de mergear.
+
+**Lessons learned:** El puerto `ILevelGeneratorService` ya existía por DIP desde el diseño original con Groq — cambiar de "LLM llamado directo desde el cliente" a "LLM llamado desde el backend" fue *solo* escribir un nuevo adapter (`ApiLevelGeneratorService`) sin tocar `GenerateLevelUseCase` ni ningún consumidor. Es el mismo beneficio arquitectónico que ya se documentó para AOP (Entry 011): la inversión de dependencias paga cuando cambia el "quién" sin que cambie el "qué".
+
+---
+
 ## Critical Evaluation
 
 - **Approximate share of AI-assisted code:** ~85% of the lines in this repository were written with AI assistance, under team-defined architecture, contracts and review. All AI-generated code is covered by the test suite.

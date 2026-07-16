@@ -6,10 +6,16 @@ import 'package:arrow_maze/domain/value_objects/level_id.dart';
 import 'package:arrow_maze/domain/value_objects/lives.dart';
 import 'package:arrow_maze/domain/value_objects/move_count.dart';
 
+enum GamePlayMode { campaign, single, survival }
+
 /// Estado de vista inmutable que GameViewModel emite a la UI.
 class GameState {
   final Board? board;
   final LevelId? currentLevelId;
+
+  /// Nombre para mostrar del nivel actual (título de GameScreen). Null para
+  /// niveles legacy sin nombre propio — la UI cae de vuelta al id formateado.
+  final String? currentLevelName;
   final bool isLoading;
   final String? errorMessage;
 
@@ -38,10 +44,12 @@ class GameState {
   /// victoria. El estado de dominio (Board vacío, puntuación registrada) sigue
   /// siendo correcto y síncrono; solo se difiere lo que la UI observa.
   final bool deferLevelCleared;
+  final GamePlayMode mode;
 
   const GameState({
     this.board,
     this.currentLevelId,
+    this.currentLevelName,
     this.isLoading = false,
     this.errorMessage,
     this.escapingArrow,
@@ -51,6 +59,7 @@ class GameState {
     this.lastResult,
     this.hasNextLevel = false,
     this.deferLevelCleared = false,
+    this.mode = GamePlayMode.single,
   });
 
   const GameState.initial() : this();
@@ -73,6 +82,8 @@ class GameState {
   GameState copyWith({
     Board? board,
     LevelId? currentLevelId,
+    String? currentLevelName,
+    bool clearLevelName = false,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -86,10 +97,13 @@ class GameState {
     bool clearResult = false,
     bool? hasNextLevel,
     bool? deferLevelCleared,
+    GamePlayMode? mode,
   }) {
     return GameState(
       board: board ?? this.board,
       currentLevelId: currentLevelId ?? this.currentLevelId,
+      currentLevelName:
+          clearLevelName ? null : (currentLevelName ?? this.currentLevelName),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       escapingArrow: clearEscaping ? null : (escapingArrow ?? this.escapingArrow),
@@ -100,6 +114,7 @@ class GameState {
       lastResult: clearResult ? null : (lastResult ?? this.lastResult),
       hasNextLevel: hasNextLevel ?? this.hasNextLevel,
       deferLevelCleared: deferLevelCleared ?? this.deferLevelCleared,
+      mode: mode ?? this.mode,
     );
   }
 }

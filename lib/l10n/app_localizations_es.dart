@@ -18,7 +18,43 @@ class AppLocalizationsEs extends AppLocalizations {
   String get playButton => 'JUGAR';
 
   @override
-  String get aiLevelBuilderButton => 'CREAR NIVEL CON IA';
+  String get creativeButton => 'CREATIVO';
+
+  @override
+  String get survivalModeButton => 'MODO SUPERVIVENCIA';
+
+  @override
+  String get survivalLeaderboardTitle => 'Ranking Supervivencia';
+
+  @override
+  String get survivalLeaderboardEmpty => 'Aún no hay marcas registradas';
+
+  @override
+  String get survivalLeaderboardError =>
+      'No se pudo cargar el ranking de supervivencia. Revisa tu conexión e inténtalo de nuevo.';
+
+  @override
+  String get survivalLeaderboardRetry => 'Reintentar';
+
+  @override
+  String get survivalPlayAgain => 'Jugar de nuevo';
+
+  @override
+  String get survivalViewRanking => 'Ver Ranking';
+
+  @override
+  String get survivalBackToMenu => 'Volver al menú';
+
+  @override
+  String survivalBoardsSolved(int count) {
+    String _temp0 = intl.Intl.pluralLogic(
+      count,
+      locale: localeName,
+      other: 'tableros',
+      one: 'tablero',
+    );
+    return '$_temp0';
+  }
 
   @override
   String get settingsTitle => 'Ajustes';

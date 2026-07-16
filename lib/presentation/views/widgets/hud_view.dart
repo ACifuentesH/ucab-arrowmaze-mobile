@@ -8,11 +8,13 @@ import 'package:arrow_maze/presentation/view_models/game_state.dart';
 class HudView extends StatelessWidget {
   final GameState gameState;
   final VoidCallback? onToggleMute;
+  final bool showLevelTimer;
 
   const HudView({
     super.key,
     required this.gameState,
     this.onToggleMute,
+    this.showLevelTimer = true,
   });
 
   static const ThemeConfig _t = ThemeConfig.dark;
@@ -45,23 +47,25 @@ class HudView extends StatelessWidget {
             }),
           ),
           const Spacer(),
-          // Cronómetro / cuenta regresiva
-          Icon(
-            limit != null ? Icons.timer : Icons.timer_outlined,
-            color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
-            size: 18,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _fmt(displaySeconds),
-            style: TextStyle(
+          if (showLevelTimer) ...[
+            // Cronómetro / cuenta regresiva (por-lvl)
+            Icon(
+              limit != null ? Icons.timer : Icons.timer_outlined,
               color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
+              size: 18,
             ),
-          ),
-          const SizedBox(width: 16),
+            const SizedBox(width: 4),
+            Text(
+              _fmt(displaySeconds),
+              style: TextStyle(
+                color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
           // Movimientos
           Icon(Icons.swap_horiz, color: _t.hudText, size: 18),
           const SizedBox(width: 4),

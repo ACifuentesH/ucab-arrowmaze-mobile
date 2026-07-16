@@ -173,7 +173,7 @@ class _GenerateLevelScreenState extends ConsumerState<GenerateLevelScreen> {
               const SizedBox(height: 24),
               _SuccessCard(
                 preview: gs.result!,
-                onPlay: () => _navigateToPlay(context, ref, gs.result!.id),
+                onPlay: () => _navigateToPlay(context, ref, gs.result!),
                 onGenerateAnother: notifier.reset,
               ),
             ],
@@ -186,8 +186,12 @@ class _GenerateLevelScreenState extends ConsumerState<GenerateLevelScreen> {
   }
 
   Future<void> _navigateToPlay(
-      BuildContext context, WidgetRef ref, String levelId) async {
-    await ref.read(gameViewModelProvider.notifier).loadLevel(levelId);
+      BuildContext context, WidgetRef ref, LevelPreview preview) async {
+    await ref.read(gameViewModelProvider.notifier).loadLevel(
+          preview.id,
+          difficulty: preview.difficulty,
+          levelName: preview.name,
+        );
     if (!context.mounted) return;
     Navigator.of(context).push(
       MaterialPageRoute(builder: (_) => const GameScreen()),

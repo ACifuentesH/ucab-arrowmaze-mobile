@@ -6,6 +6,7 @@ import 'package:arrow_maze/application/dtos/level_spec.dart';
 import 'package:arrow_maze/application/enums/difficulty.dart';
 import 'package:arrow_maze/application/ports/i_level_generator_service.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
+import 'package:arrow_maze/domain/services/procedural_arrow_placer.dart';
 
 import '../fakes/fake_generated_level_repository.dart';
 import '../fakes/fake_level_generator_service.dart';
@@ -34,9 +35,11 @@ class GenerateLevelTestApi {
     return this;
   }
 
+  /// Silueta de una sola celda dos veces seguidas: ProceduralArrowPlacer no
+  /// tiene dónde colocar ninguna flecha, así que ambos intentos fallan.
   GenerateLevelTestApi givenAGeneratorThatReturnsAnUnplayableLevelTwice() {
-    _generator.enqueueLevel(LevelDefinitionMother.withArrowOutsideBoard());
-    _generator.enqueueLevel(LevelDefinitionMother.withArrowOutsideBoard());
+    _generator.enqueueLevel(LevelDefinitionMother.tooSmallForArrows());
+    _generator.enqueueLevel(LevelDefinitionMother.tooSmallForArrows());
     return this;
   }
 
@@ -45,11 +48,11 @@ class GenerateLevelTestApi {
       generator: _generator,
       repository: _repository,
       builder: LevelBuilder(),
+      arrowPlacer: ProceduralArrowPlacer(),
     );
     try {
       _preview = await useCase.execute(const LevelSpec(
         shapeName: 'corazón',
-        arrowCount: 1,
         difficulty: Difficulty.easy,
       ));
     } catch (e) {

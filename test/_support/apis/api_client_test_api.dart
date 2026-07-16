@@ -6,7 +6,9 @@ import 'package:http/testing.dart';
 
 import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
+import 'package:arrow_maze/application/dtos/level_spec.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
+import 'package:arrow_maze/application/enums/difficulty.dart';
 import 'package:arrow_maze/application/builders/level_definition.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
@@ -86,6 +88,16 @@ class ApiClientTestApi {
   Future<ApiClientTestApi> whenGettingLevelById(String id) =>
       _capture(() => _client.getLevelById(id));
 
+  Future<ApiClientTestApi> whenGeneratingLevel({
+    String shapeName = 'a heart',
+    Difficulty difficulty = Difficulty.medium,
+  }) =>
+      _capture(() => _client.generateLevel(LevelSpec(
+            shapeName: shapeName,
+            difficulty: difficulty,
+            gridSize: 16,
+          )));
+
   Future<ApiClientTestApi> _capture(Future<Object?> Function() call) async {
     try {
       _result = await call();
@@ -112,6 +124,11 @@ class ApiClientTestApi {
   void thenRequestBodyFieldShouldBe(String field, Object? value) {
     final body = jsonDecode(_lastRequest!.body) as Map<String, dynamic>;
     expect(body[field], equals(value));
+  }
+
+  void thenRequestBodyFieldShouldContain(String field, String substring) {
+    final body = jsonDecode(_lastRequest!.body) as Map<String, dynamic>;
+    expect(body[field], contains(substring));
   }
 
   void thenRequestBodyShouldNotContain(String field) {
@@ -170,5 +187,20 @@ class ApiClientTestApi {
     expect(level.cells, isNotEmpty);
     expect(level.arrows, isNotEmpty);
     expect(level.lives, greaterThanOrEqualTo(0));
+  }
+
+  void thenGeneratedLevelNameShouldBe(String name) {
+    final level = _result as LevelDefinition;
+    expect(level.name, equals(name));
+  }
+
+  void thenGeneratedLevelLivesShouldBe(int lives) {
+    final level = _result as LevelDefinition;
+    expect(level.lives, equals(lives));
+  }
+
+  void thenGeneratedLevelCellsShouldBe(List<List<int>> cells) {
+    final level = _result as LevelDefinition;
+    expect(level.cells, equals(cells));
   }
 }
