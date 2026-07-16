@@ -6,6 +6,7 @@ import 'package:arrow_maze/application/builders/level_definition.dart';
 import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/auth_user.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
+import 'package:arrow_maze/application/dtos/level_spec.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
 import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
@@ -156,6 +157,71 @@ class HttpApiClient implements IApiClient {
     return (data as List<dynamic>)
         .map((e) => SurvivalEntryDto.fromJson(e as Map<String, dynamic>))
         .toList();
+  }
+
+  // ── Generación de niveles con IA ─────────────────────────────────────────
+
+  @override
+  Future<LevelDefinition> generateLevel(LevelSpec spec) async {
+    final data = await _request(
+      'POST',
+      '/levels/generate',
+      body: {
+        'prompt': _buildGeneratePrompt(spec),
+        'difficulty': spec.difficulty.name,
+      },
+      authenticated: true,
+    ) as Map<String, dynamic>;
+
+    // El backend sólo devuelve el blob { cells, arrows, lives?,
+    // timeLimitSeconds? } (no persiste, no hay id/name propios): el resto del
+    // contrato lo completa el cliente a partir del spec, igual que antes.
+    // "arrows" del LLM se ignora — GenerateLevelUseCase las reemplaza con
+    // ProceduralArrowPlacer (determinista, sin solapes, sin depender del
+    // modelo); solo importa "cells" (la silueta).
+    return LevelDefinition.fromJson({
+      'id': 'generated_${DateTime.now().millisecondsSinceEpoch.toRadixString(16)}',
+      'name': spec.shapeName,
+      'lives': spec.lives,
+      'difficulty': spec.difficulty.name,
+      if (spec.timeLimitSeconds != null)
+        'timeLimitSeconds': spec.timeLimitSeconds,
+      'cells': _normalizeCells(data['cells'] as List<dynamic>),
+      'arrows': data['arrows'],
+    });
+  }
+
+  /// El modelo dibuja la silueta en cualquier esquina del grid que se le pidió
+  /// (nunca necesariamente desde (0,0)); BoardView centra el bounding box
+  /// completo (boundingRows × boundingCols), así que si no se recorta el
+  /// margen sobrante el tablero visible sale descentrado y cambia de lugar en
+  /// cada generación. Se traslada la forma para que su propio bounding box
+  /// empiece en (0,0) — mismo tablero, ahora con el margen quitado.
+  List<List<int>> _normalizeCells(List<dynamic> raw) {
+    final cells = raw
+        .map((e) => [(e as List<dynamic>)[0] as int, e[1] as int])
+        .toList();
+    if (cells.isEmpty) return cells;
+
+    final minRow = cells.map((c) => c[0]).reduce((a, b) => a < b ? a : b);
+    final minCol = cells.map((c) => c[1]).reduce((a, b) => a < b ? a : b);
+    if (minRow == 0 && minCol == 0) return cells;
+
+    return cells.map((c) => [c[0] - minRow, c[1] - minCol]).toList();
+  }
+
+  // El backend valida prompt.length <= 500 (zod), así que este texto tiene
+  // que entrar holgado incluso con nombres de forma largos. Las flechas que
+  // pida el modelo se descartan (ver arriba) — el prompt no les pide nada
+  // salvo lo mínimo para pasar la validación del backend, dejando todo el
+  // esfuerzo del modelo enfocado en la silueta.
+  String _buildGeneratePrompt(LevelSpec spec) {
+    final n = spec.gridSize;
+    return 'A level shaped like: ${spec.shapeName}. Focus entirely on the '
+        'silhouette: large, bold, clearly recognizable as '
+        '"${spec.shapeName}", filling at least 60% of a ${n}x$n grid '
+        '(row 0=top, col 0=left). Include 1-2 short arrows anywhere valid — '
+        'their placement does not matter, they will be discarded.';
   }
 
   // ── Núcleo HTTP ───────────────────────────────────────────────────────────

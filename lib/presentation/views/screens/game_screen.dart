@@ -43,7 +43,10 @@ class GameScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: _t.boardBackground,
         title: Text(
-          gs.currentLevelId?.value.replaceAll('_', ' ').toUpperCase() ?? '',
+          (gs.currentLevelName?.trim().isNotEmpty ?? false)
+              ? gs.currentLevelName!.toUpperCase()
+              : gs.currentLevelId?.value.replaceAll('_', ' ').toUpperCase() ??
+                  '',
           style: TextStyle(
               color: _t.hudText, fontSize: 14, letterSpacing: 1.5),
         ),

@@ -12,9 +12,9 @@
   "@playButton": {
     "description": "Primary button on home that starts the campaign"
   },
-  "aiLevelBuilderButton": "AI LEVEL BUILDER",
-  "@aiLevelBuilderButton": {
-    "description": "Home button that opens the AI level generator"
+  "creativeButton": "CREATIVE",
+  "@creativeButton": {
+    "description": "Level select button that opens the AI level generator (map builder)"
   },
   "survivalModeButton": "SURVIVAL MODE",
   "@survivalModeButton": {

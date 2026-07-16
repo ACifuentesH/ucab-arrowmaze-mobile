@@ -12,6 +12,10 @@ enum GamePlayMode { campaign, single, survival }
 class GameState {
   final Board? board;
   final LevelId? currentLevelId;
+
+  /// Nombre para mostrar del nivel actual (título de GameScreen). Null para
+  /// niveles legacy sin nombre propio — la UI cae de vuelta al id formateado.
+  final String? currentLevelName;
   final bool isLoading;
   final String? errorMessage;
 
@@ -45,6 +49,7 @@ class GameState {
   const GameState({
     this.board,
     this.currentLevelId,
+    this.currentLevelName,
     this.isLoading = false,
     this.errorMessage,
     this.escapingArrow,
@@ -77,6 +82,8 @@ class GameState {
   GameState copyWith({
     Board? board,
     LevelId? currentLevelId,
+    String? currentLevelName,
+    bool clearLevelName = false,
     bool? isLoading,
     String? errorMessage,
     bool clearError = false,
@@ -95,6 +102,8 @@ class GameState {
     return GameState(
       board: board ?? this.board,
       currentLevelId: currentLevelId ?? this.currentLevelId,
+      currentLevelName:
+          clearLevelName ? null : (currentLevelName ?? this.currentLevelName),
       isLoading: isLoading ?? this.isLoading,
       errorMessage: clearError ? null : (errorMessage ?? this.errorMessage),
       escapingArrow: clearEscaping ? null : (escapingArrow ?? this.escapingArrow),

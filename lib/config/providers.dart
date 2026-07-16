@@ -41,8 +41,10 @@ import 'package:arrow_maze/application/use_cases/progress/push_progress_use_case
 import 'package:arrow_maze/application/use_cases/progress/sync_progress_use_case.dart';
 import 'package:arrow_maze/config/api_config.dart';
 import 'package:arrow_maze/config/progress_sync_coordinator.dart';
+import 'package:arrow_maze/domain/ports/i_arrow_placer.dart';
 import 'package:arrow_maze/domain/ports/i_level_repository.dart';
 import 'package:arrow_maze/domain/ports/i_time_service.dart';
+import 'package:arrow_maze/domain/services/procedural_arrow_placer.dart';
 import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
 import 'package:arrow_maze/infrastructure/catalog/asset_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/composite_level_catalog_service.dart';
@@ -55,8 +57,8 @@ import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progr
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_token_storage.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_user_storage.dart';
 import 'package:arrow_maze/infrastructure/repositories/survival_repository_impl.dart';
+import 'package:arrow_maze/infrastructure/services/api_level_generator_service.dart';
 import 'package:arrow_maze/infrastructure/services/audio_service.dart';
-import 'package:arrow_maze/infrastructure/services/groq_level_generator_service.dart';
 import 'package:arrow_maze/infrastructure/services/stopwatch_time_service.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_view_model.dart';
@@ -118,14 +120,18 @@ final audioServiceProvider = Provider<IAudioService>(
   (_) => AudioService(),
 );
 
-// ?? Infraestructura: AI generator ????????????????????????????????????????????
-
-/// La API key se inyecta v?a --dart-define=GROQ_API_KEY=gsk_...
-/// Ejemplo: flutter run --dart-define=GROQ_API_KEY=gsk_xxxx
-const _groqApiKey = String.fromEnvironment('GROQ_API_KEY', defaultValue: '');
+// ── Infraestructura: AI generator ────────────────────────────────────────────
+// Delega en el backend (POST /levels/generate) vía apiClientProvider: el
+// frontend no ve ningún proveedor de IA ni API key directamente (DIP).
 
 final levelGeneratorServiceProvider = Provider<ILevelGeneratorService>(
-  (_) => GroqLevelGeneratorService(apiKey: _groqApiKey),
+  (ref) => ApiLevelGeneratorService(apiClient: ref.read(apiClientProvider)),
+);
+
+/// Strategy de dominio: coloca las flechas de forma determinista sobre la
+/// silueta que devuelve la IA (ver GenerateLevelUseCase).
+final arrowPlacerProvider = Provider<IArrowPlacer>(
+  (_) => ProceduralArrowPlacer(),
 );
 
 // ?? Infraestructura: cat?logo (Strategy + Composite) ?????????????????????????
@@ -188,6 +194,7 @@ final generateLevelUseCaseProvider = Provider<GenerateLevelUseCase>(
     generator: ref.read(levelGeneratorServiceProvider),
     repository: ref.read(generatedLevelRepositoryProvider),
     builder: ref.read(levelBuilderProvider),
+    arrowPlacer: ref.read(arrowPlacerProvider),
   ),
 );
 

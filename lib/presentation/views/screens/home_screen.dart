@@ -5,7 +5,6 @@ import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/view_models/auth/auth_state.dart';
-import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/level_select_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/register_screen.dart';
@@ -202,24 +201,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     onPressed: _onPlayPressed,
                     child: Text(l.playButton),
-                  ),
-                  const SizedBox(height: 16),
-                  OutlinedButton.icon(
-                    style: OutlinedButton.styleFrom(
-                      foregroundColor: _t.primary,
-                      side: BorderSide(
-                          color: _t.primary.withValues(alpha: 0.6)),
-                      minimumSize: const Size(200, 48),
-                      shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
-                    ),
-                    onPressed: () => Navigator.push(
-                      context,
-                      MaterialPageRoute(
-                          builder: (_) => const GenerateLevelScreen()),
-                    ),
-                    icon: const Icon(Icons.auto_awesome, size: 18),
-                    label: Text(l.aiLevelBuilderButton),
                   ),
                   const SizedBox(height: 16),
                   OutlinedButton.icon(

@@ -5,6 +5,7 @@
 import 'package:arrow_maze/application/builders/level_definition.dart';
 import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
+import 'package:arrow_maze/application/dtos/level_spec.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
 import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
@@ -117,4 +118,8 @@ class ExceptionHandlingApiClientProxy implements IApiClient {
             durationSeconds: durationSeconds,
             limit: limit,
           ));
+
+  @override
+  Future<LevelDefinition> generateLevel(LevelSpec spec) =>
+      _guard(() => _delegate.generateLevel(spec));
 }

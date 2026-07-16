@@ -116,11 +116,11 @@ abstract class AppLocalizations {
   /// **'PLAY'**
   String get playButton;
 
-  /// Home button that opens the AI level generator
+  /// Level select button that opens the AI level generator (map builder)
   ///
   /// In en, this message translates to:
-  /// **'AI LEVEL BUILDER'**
-  String get aiLevelBuilderButton;
+  /// **'CREATIVE'**
+  String get creativeButton;
 
   /// Home button that starts a timed survival run
   ///

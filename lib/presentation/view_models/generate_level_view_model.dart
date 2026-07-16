@@ -11,11 +11,7 @@ class GenerateLevelViewModel extends StateNotifier<GenerateLevelState> {
 
   /// Tablero grande y fijo: figuras a gran escala, reconocibles.
   /// El usuario ya no decide el tamaño ni el número de flechas.
-  static const int _gridSize = 16;
-
-  /// Pista para el modelo; las flechas se generan de forma procedural a partir
-  /// del tamaño real de la figura, así que este valor no limita el resultado.
-  static const int _arrowCountHint = 6;
+  static const int _gridSize = 22;
 
   GenerateLevelViewModel(this._useCase) : super(GenerateLevelState.initial());
 
@@ -41,7 +37,6 @@ class GenerateLevelViewModel extends StateNotifier<GenerateLevelState> {
     try {
       final spec = LevelSpec(
         shapeName: state.shapeName.trim(),
-        arrowCount: _arrowCountHint,
         difficulty: state.difficulty,
         timeLimitSeconds: state.hasTimeLimit ? state.timeLimitSeconds : null,
         gridSize: _gridSize,

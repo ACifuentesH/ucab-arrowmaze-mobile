@@ -214,9 +214,41 @@ class BoardPainter extends CustomPainter {
   Offset _center(int r, int c, double cs) =>
       Offset((c + 0.5) * cs, (r + 0.5) * cs);
 
-  Color _color(String hex) {
-    final s = hex.replaceFirst('#', '');
-    return Color(int.parse('FF$s', radix: 16));
+  /// Niveles generados con IA pueden traer el color como nombre CSS
+  /// ("crimson", "hotpink"...) en vez de hex — el modelo no siempre respeta
+  /// el formato pedido. Se soportan ambos; si no se puede interpretar, cae a
+  /// un color de la paleta en vez de tirar una excepción a mitad del paint().
+  static const Map<String, int> _cssColors = {
+    'red': 0xFFFF0000, 'crimson': 0xFFDC143C, 'deeppink': 0xFFFF1493,
+    'hotpink': 0xFFFF69B4, 'pink': 0xFFFFC0CB, 'orange': 0xFFFFA500,
+    'orangered': 0xFFFF4500, 'gold': 0xFFFFD700, 'yellow': 0xFFFFFF00,
+    'green': 0xFF008000, 'limegreen': 0xFF32CD32, 'lime': 0xFF00FF00,
+    'teal': 0xFF008080, 'turquoise': 0xFF40E0D0, 'cyan': 0xFF00FFFF,
+    'blue': 0xFF0000FF, 'royalblue': 0xFF4169E1, 'dodgerblue': 0xFF1E90FF,
+    'navy': 0xFF000080, 'indigo': 0xFF4B0082, 'purple': 0xFF800080,
+    'violet': 0xFFEE82EE, 'magenta': 0xFFFF00FF, 'orchid': 0xFFDA70D6,
+    'brown': 0xFFA52A2A, 'coral': 0xFFFF7F50, 'salmon': 0xFFFA8072,
+    'white': 0xFFFFFFFF, 'black': 0xFF000000, 'gray': 0xFF808080,
+    'grey': 0xFF808080,
+  };
+
+  static const List<int> _fallbackPalette = [
+    0xFFEF476F, 0xFF06D6A0, 0xFF118AB2, 0xFFFFD166,
+    0xFF8338EC, 0xFFFB5607, 0xFF3A86FF, 0xFFFF006E,
+  ];
+
+  Color _color(String raw) {
+    final s = raw.trim();
+    if (s.startsWith('#')) {
+      final parsed = int.tryParse('FF${s.substring(1)}', radix: 16);
+      if (parsed != null) return Color(parsed);
+    } else {
+      final named = _cssColors[s.toLowerCase()];
+      if (named != null) return Color(named);
+      final parsed = int.tryParse('FF$s', radix: 16);
+      if (parsed != null) return Color(parsed);
+    }
+    return Color(_fallbackPalette[s.hashCode.abs() % _fallbackPalette.length]);
   }
 
   static (int, int)? _parseId(String id) {

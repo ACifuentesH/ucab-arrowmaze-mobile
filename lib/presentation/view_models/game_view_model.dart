@@ -88,8 +88,11 @@ class GameViewModel extends StateNotifier<GameState> {
     String levelId, {
     Difficulty difficulty = Difficulty.easy,
     GamePlayMode mode = GamePlayMode.single,
+    String? levelName,
   }) {
-    _queue = [PlayableLevel(id: levelId, difficulty: difficulty)];
+    _queue = [
+      PlayableLevel(id: levelId, difficulty: difficulty, name: levelName),
+    ];
     _queueIndex = 0;
     state = state.copyWith(mode: mode);
     return _loadCurrent();
@@ -115,6 +118,8 @@ class GameViewModel extends StateNotifier<GameState> {
       state = state.copyWith(
         board: board,
         currentLevelId: LevelId(level.id),
+        currentLevelName: level.name,
+        clearLevelName: level.name == null,
         isLoading: false,
         elapsedSeconds: 0,
         clearBlocked: true,
