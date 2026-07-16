@@ -164,6 +164,12 @@ abstract class AppLocalizations {
   /// **'View ranking'**
   String get survivalViewRanking;
 
+  /// Exit button on survival error overlay to leave the stuck error loop
+  ///
+  /// In en, this message translates to:
+  /// **'Back to menu'**
+  String get survivalBackToMenu;
+
   /// Label under the boards-solved count on a survival ranking row
   ///
   /// In en, this message translates to:

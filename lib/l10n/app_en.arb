@@ -44,6 +44,10 @@
   "@survivalViewRanking": {
     "description": "Secondary button on survival end overlay to open the leaderboard"
   },
+  "survivalBackToMenu": "Back to menu",
+  "@survivalBackToMenu": {
+    "description": "Exit button on survival error overlay to leave the stuck error loop"
+  },
   "survivalBoardsSolved": "{count, plural, =1{board} other{boards}}",
   "@survivalBoardsSolved": {
     "description": "Label under the boards-solved count on a survival ranking row",

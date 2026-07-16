@@ -8,7 +8,6 @@ import 'package:arrow_maze/application/dtos/auth_user.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
-import 'package:arrow_maze/application/dtos/submit_survival_input.dart';
 import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
@@ -132,11 +131,11 @@ class HttpApiClient implements IApiClient {
   // ── Survival ──────────────────────────────────────────────────────────────
 
   @override
-  Future<void> submitSurvival(SubmitSurvivalInput input) async {
+  Future<void> submitSurvival(Map<String, dynamic> body) async {
     await _request(
       'POST',
       '/survival',
-      body: input.toJson(),
+      body: body,
       authenticated: true,
     );
   }

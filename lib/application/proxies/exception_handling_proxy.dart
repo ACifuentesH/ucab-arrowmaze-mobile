@@ -7,7 +7,6 @@ import 'package:arrow_maze/application/dtos/auth_session.dart';
 import 'package:arrow_maze/application/dtos/leaderboard_entry_dto.dart';
 import 'package:arrow_maze/application/dtos/player_progress_dto.dart';
 import 'package:arrow_maze/application/dtos/progress_update.dart';
-import 'package:arrow_maze/application/dtos/submit_survival_input.dart';
 import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 import 'package:arrow_maze/application/errors/api_error.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
@@ -106,8 +105,8 @@ class ExceptionHandlingApiClientProxy implements IApiClient {
       _guard(() => _delegate.getLevelById(id));
 
   @override
-  Future<void> submitSurvival(SubmitSurvivalInput input) =>
-      _guard(() => _delegate.submitSurvival(input));
+  Future<void> submitSurvival(Map<String, dynamic> body) =>
+      _guard(() => _delegate.submitSurvival(body));
 
   @override
   Future<List<SurvivalEntryDto>> getSurvivalLeaderboard({

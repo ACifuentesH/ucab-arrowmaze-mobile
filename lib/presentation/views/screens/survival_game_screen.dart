@@ -47,6 +47,11 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
     );
   }
 
+  void _exitToMenu() {
+    ref.invalidate(survivalViewModelProvider);
+    Navigator.of(context).pop();
+  }
+
   @override
   Widget build(BuildContext context) {
     final survival = ref.watch(survivalViewModelProvider);
@@ -112,6 +117,7 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
                   .start(durationSeconds: widget.durationSeconds),
               onPlayAgain: _playAgain,
               onViewRanking: _viewRanking,
+              onExitToMenu: _exitToMenu,
             ),
         ],
       ),
@@ -182,6 +188,7 @@ class _SurvivalOverlay extends StatelessWidget {
     required this.onRetrySubmit,
     required this.onPlayAgain,
     required this.onViewRanking,
+    required this.onExitToMenu,
   });
 
   final SurvivalState survival;
@@ -189,6 +196,7 @@ class _SurvivalOverlay extends StatelessWidget {
   final VoidCallback onRetrySubmit;
   final VoidCallback onPlayAgain;
   final VoidCallback onViewRanking;
+  final VoidCallback onExitToMenu;
 
   static const ThemeConfig _t = ThemeConfig.dark;
   static const Color _accent = Color(0xFFFF6B35);
@@ -298,13 +306,49 @@ class _SurvivalOverlay extends StatelessWidget {
         ],
       );
     } else if (survival.phase == SurvivalPhase.error) {
-      actions = OutlinedButton(
-        style: OutlinedButton.styleFrom(
-          foregroundColor: Colors.white,
-          side: const BorderSide(color: Colors.white),
-        ),
-        onPressed: onRetrySubmit,
-        child: Text(l.survivalLeaderboardRetry),
+      actions = Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: Colors.white,
+                foregroundColor: Colors.black,
+                minimumSize: const Size.fromHeight(48),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.bold,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onRetrySubmit,
+              child: Text(l.survivalLeaderboardRetry),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            child: OutlinedButton(
+              style: OutlinedButton.styleFrom(
+                foregroundColor: Colors.white,
+                side: const BorderSide(color: Colors.white),
+                minimumSize: const Size.fromHeight(48),
+                textStyle: const TextStyle(
+                  fontSize: 15,
+                  fontWeight: FontWeight.w600,
+                ),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14),
+                ),
+              ),
+              onPressed: onExitToMenu,
+              child: Text(l.survivalBackToMenu),
+            ),
+          ),
+        ],
       );
     } else {
       actions = FilledButton(

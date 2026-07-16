@@ -9,8 +9,12 @@ class SurvivalRepositoryImpl implements ISurvivalRepository {
   const SurvivalRepositoryImpl({required IApiClient api}) : _api = api;
 
   @override
-  Future<void> submitRun(SubmitSurvivalInput input) =>
-      _api.submitSurvival(input);
+  Future<void> submitRun(SubmitSurvivalInput input) {
+    // El backend (422) rechaza claves con valor null (p. ej. totalScore).
+    final body = Map<String, dynamic>.from(input.toJson());
+    body.removeWhere((_, value) => value == null);
+    return _api.submitSurvival(body);
+  }
 
   @override
   Future<List<SurvivalEntryDto>> getLeaderboard({

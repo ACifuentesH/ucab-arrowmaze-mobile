@@ -11,6 +11,7 @@
   "survivalLeaderboardRetry": "Reintentar",
   "survivalPlayAgain": "Jugar de nuevo",
   "survivalViewRanking": "Ver Ranking",
+  "survivalBackToMenu": "Volver al menú",
   "survivalBoardsSolved": "{count, plural, =1{tablero} other{tableros}}",
   "settingsTitle": "Ajustes",
   "settingsTooltip": "Ajustes",

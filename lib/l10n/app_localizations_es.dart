@@ -43,6 +43,9 @@ class AppLocalizationsEs extends AppLocalizations {
   String get survivalViewRanking => 'Ver Ranking';
 
   @override
+  String get survivalBackToMenu => 'Volver al menú';
+
+  @override
   String survivalBoardsSolved(int count) {
     String _temp0 = intl.Intl.pluralLogic(
       count,
