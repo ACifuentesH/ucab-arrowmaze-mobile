@@ -60,12 +60,13 @@ import 'package:arrow_maze/presentation/view_models/game_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/game_state.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
+import 'package:arrow_maze/presentation/view_models/leaderboard/leaderboard_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_state.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/settings/settings_state.dart';
 import 'package:arrow_maze/presentation/view_models/settings/settings_view_model.dart';
 
-// ── Infraestructura: SharedPreferences ───────────────────────────────────────
+// --- Infraestructura: SharedPreferences ---
 // Sobreescrito en main() con la instancia real antes de runApp().
 
 final sharedPreferencesProvider = Provider<SharedPreferences>(
@@ -74,7 +75,7 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
   ),
 );
 
-// ── Infraestructura: repositorios ─────────────────────────────────────────────
+// ?? Infraestructura: repositorios ?????????????????????????????????????????????
 
 final levelBuilderProvider = Provider<LevelBuilder>(
   (_) => LevelBuilder(),
@@ -92,7 +93,7 @@ final playerProgressRepositoryProvider = Provider<IPlayerProgressRepository>(
   ),
 );
 
-// ChainedLevelRepository: Chain of Responsibility — assets → generated.
+// ChainedLevelRepository: Chain of Responsibility ? assets ? generated.
 final levelRepositoryProvider = Provider<ILevelRepository>(
   (ref) => ChainedLevelRepository([
     AssetJsonLevelRepository(builder: ref.read(levelBuilderProvider)),
@@ -111,7 +112,7 @@ final audioServiceProvider = Provider<IAudioService>(
   (_) => AudioService(),
 );
 
-// ── Infraestructura: AI generator ────────────────────────────────────────────
+// ?? Infraestructura: AI generator ????????????????????????????????????????????
 
 /// La API key se inyecta vía --dart-define=GROQ_API_KEY=gsk_...
 /// Ejemplo: flutter run --dart-define=GROQ_API_KEY=gsk_xxxx
@@ -121,7 +122,7 @@ final levelGeneratorServiceProvider = Provider<ILevelGeneratorService>(
   (_) => GroqLevelGeneratorService(apiKey: _groqApiKey),
 );
 
-// ── Infraestructura: catálogo (Strategy + Composite) ─────────────────────────
+// ?? Infraestructura: catálogo (Strategy + Composite) ?????????????????????????
 
 final levelCatalogServiceProvider = Provider<ILevelCatalogService>(
   (ref) => CompositeLevelCatalogService([
@@ -130,7 +131,7 @@ final levelCatalogServiceProvider = Provider<ILevelCatalogService>(
   ]),
 );
 
-// ── Aplicación: casos de uso ──────────────────────────────────────────────────
+// --- Aplicacion: casos de uso remotos (auth + leaderboard + progress-sync) ---
 
 final commandInvokerProvider = Provider<CommandInvoker>(
   (_) => CommandInvoker(),
@@ -191,14 +192,14 @@ final getLevelCatalogUseCaseProvider =
   ).execute();
 });
 
-// ── Notifier: generación de niveles ──────────────────────────────────────────
+// ?? Notifier: generación de niveles ??????????????????????????????????????????
 
 final generateLevelViewModelProvider =
     StateNotifierProvider<GenerateLevelViewModel, GenerateLevelState>(
   (ref) => GenerateLevelViewModel(ref.read(generateLevelUseCaseProvider)),
 );
 
-// ── Infraestructura: apiClient (puerto en application, adapter http) ─────────
+// --- Infraestructura: apiClient ---
 final httpClientProvider = Provider<http.Client>((_) => http.Client());
 
 final tokenStorageProvider = Provider<ITokenStorage>(
@@ -222,7 +223,7 @@ final apiClientProvider = Provider<IApiClient>(
   ),
 );
 
-// ── Aplicación: casos de uso remotos (auth + leaderboard + progress-sync) ────
+// --- Aplicacion: casos de uso remotos (auth + leaderboard + progress-sync) ---
 
 final loginUseCaseProvider = Provider<LoginUseCase>(
   (ref) => LoginUseCase(
@@ -266,6 +267,13 @@ final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
   ),
 );
 
+final leaderboardViewModelProvider =
+    StateNotifierProvider<LeaderboardViewModel, LeaderboardState>(
+  (ref) => LeaderboardViewModel(
+    getLeaderboard: ref.read(getLeaderboardUseCaseProvider),
+  ),
+);
+
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
@@ -294,7 +302,7 @@ final progressSyncCoordinatorProvider = Provider<IProgressSyncCoordinator>(
   ),
 );
 
-// ── AuthViewModel ─────────────────────────────────────────────────────────
+// --- AuthViewModel ---
 
 final authViewModelProvider =
     StateNotifierProvider<AuthViewModel, AuthState>(
@@ -308,7 +316,7 @@ final authViewModelProvider =
   ),
 );
 
-// ── GameViewModel ─────────────────────────────────────────────────────────
+// --- GameViewModel ---
 
 final gameViewModelProvider =
     StateNotifierProvider<GameViewModel, GameState>(
@@ -324,7 +332,7 @@ final gameViewModelProvider =
   ),
 );
 
-// ── LevelSelectViewModel ──────────────────────────────────────────────────
+// --- LevelSelectViewModel ---
 
 final levelSelectViewModelProvider =
     StateNotifierProvider<LevelSelectViewModel, LevelSelectState>(
@@ -333,7 +341,7 @@ final levelSelectViewModelProvider =
   ),
 );
 
-// ── SettingsViewModel (idioma + mute) ─────────────────────────────────────
+// --- SettingsViewModel (idioma + mute) ---
 
 final settingsViewModelProvider =
     StateNotifierProvider<SettingsViewModel, SettingsState>(

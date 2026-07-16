@@ -10,15 +10,16 @@ import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/leaderboard_screen.dart';
 
-/// Pantalla de selección: la campaña se dibuja como un sendero progresivo
+/// Pantalla de seleccion: la campa?a se dibuja como un sendero progresivo
 /// (nodos encadenados que serpentean hacia abajo, estilo lobby de juego de
 /// puzzles) + una lista secundaria de niveles generados con IA.
 class LevelSelectScreen extends ConsumerStatefulWidget {
   const LevelSelectScreen({super.key});
 
-  /// Key estable del nodo de campaña número [number] (1-based) para las
-  /// pruebas de navegación/interacción.
+  /// Key estable del nodo de campa?a n?mero [number] (1-based) para las
+  /// pruebas de navegaci?n/interacci?n.
   static Key campaignTileKey(int number) => Key('campaign_tile_$number');
 
   @override
@@ -65,6 +66,15 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
     if (mounted) ref.read(levelSelectViewModelProvider.notifier).load();
   }
 
+  void _openLeaderboard(String levelId) {
+    Navigator.push(
+      context,
+      MaterialPageRoute(
+        builder: (_) => LeaderboardScreen(levelId: levelId),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final l = AppLocalizations.of(context)!;
@@ -94,6 +104,8 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
                   theme: _t,
                   playLabel: l.playButton,
                   onTapLevel: (i) => _playCampaign(campaign, i),
+                  onLeaderboard: (i) =>
+                      _openLeaderboard(campaign[i].preview.id),
                 ),
                 if (generated.isNotEmpty) ...[
                   const SizedBox(height: 28),
@@ -109,6 +121,8 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
                             entry.preview.difficulty.name,
                           ),
                           onTap: () => _playGenerated(entry),
+                          onLeaderboard: () =>
+                              _openLeaderboard(entry.preview.id),
                         ),
                       )),
                 ],
@@ -141,7 +155,7 @@ class _SectionTitle extends StatelessWidget {
       );
 }
 
-/// Barra fina de progreso global de la campaña (niveles completados / total).
+/// Barra fina de progreso global de la campa?a (niveles completados / total).
 class _CampaignProgressBar extends StatelessWidget {
   final List<LevelSelectEntry> campaign;
   final ThemeConfig theme;
@@ -181,24 +195,26 @@ class _CampaignProgressBar extends StatelessWidget {
   }
 }
 
-/// Sendero serpenteante de la campaña: coloca cada nodo siguiendo una onda
-/// senoidal y dibuja el camino que los conecta por detrás.
+/// Sendero serpenteante de la campa?a: coloca cada nodo siguiendo una onda
+/// senoidal y dibuja el camino que los conecta por detr?s.
 class _CampaignTrail extends StatelessWidget {
   final List<LevelSelectEntry> campaign;
   final ThemeConfig theme;
   final String playLabel;
   final void Function(int index) onTapLevel;
+  final void Function(int index) onLeaderboard;
 
   const _CampaignTrail({
     required this.campaign,
     required this.theme,
     required this.playLabel,
     required this.onTapLevel,
+    required this.onLeaderboard,
   });
 
-  // Geometría del sendero.
-  static const double _vSpacing = 118; // separación vertical entre nodos
-  static const double _topPad = 44; // hueco para el marcador "estás aquí"
+  // Geometr?a del sendero.
+  static const double _vSpacing = 118; // separaci?n vertical entre nodos
+  static const double _topPad = 44; // hueco para el marcador "est?s aqu?"
   static const double _bottomPad = 20;
   static const double _sizeCurrent = 84;
   static const double _sizeCompleted = 72;
@@ -214,8 +230,8 @@ class _CampaignTrail extends StatelessWidget {
   Widget build(BuildContext context) {
     if (campaign.isEmpty) return const SizedBox.shrink();
 
-    // El "nodo actual" es el primer nivel jugable aún sin completar: ahí va el
-    // marcador de "estás aquí".
+    // El "nodo actual" es el primer nivel jugable a?n sin completar: ah? va el
+    // marcador de "est?s aqu?".
     final currentIndex =
         campaign.indexWhere((e) => e.status == LevelStatus.unlocked);
 
@@ -225,7 +241,7 @@ class _CampaignTrail extends StatelessWidget {
         final midX = width / 2;
         final amplitude = math.min(width * 0.30, 120.0);
 
-        // Centro de cada nodo (onda senoidal → serpenteo suave).
+        // Centro de cada nodo (onda senoidal ? serpenteo suave).
         final centers = <Offset>[
           for (var i = 0; i < campaign.length; i++)
             Offset(
@@ -253,7 +269,7 @@ class _CampaignTrail extends StatelessWidget {
                   ),
                 ),
               ),
-              // Marcador "estás aquí" sobre el nodo actual.
+              // Marcador "est?s aqu?" sobre el nodo actual.
               if (currentIndex >= 0)
                 Positioned(
                   left: centers[currentIndex].dx - 70,
@@ -291,12 +307,13 @@ class _CampaignTrail extends StatelessWidget {
         isCurrent: isCurrent,
         theme: theme,
         onTap: entry.isPlayable ? () => onTapLevel(i) : null,
+        onLeaderboard: () => onLeaderboard(i),
       ),
     );
   }
 }
 
-/// Chip "estás aquí" que apunta al siguiente nivel jugable.
+/// Chip "est?s aqu?" que apunta al siguiente nivel jugable.
 class _CurrentMarker extends StatelessWidget {
   final ThemeConfig theme;
   final String label;
@@ -336,7 +353,7 @@ class _CurrentMarker extends StatelessWidget {
   }
 }
 
-/// Un nodo del sendero. Círculo con número/candado, borde según estado y una
+/// Un nodo del sendero. C?rculo con n?mero/candado, borde seg?n estado y una
 /// fila de estrellas colgando debajo. Mantiene `Icons.lock_rounded` para
 /// bloqueados y `Icons.star_rounded` para estrellas ganadas (contrato de test).
 class _CampaignNode extends StatelessWidget {
@@ -346,6 +363,7 @@ class _CampaignNode extends StatelessWidget {
   final bool isCurrent;
   final ThemeConfig theme;
   final VoidCallback? onTap;
+  final VoidCallback onLeaderboard;
 
   const _CampaignNode({
     super.key,
@@ -355,6 +373,7 @@ class _CampaignNode extends StatelessWidget {
     required this.isCurrent,
     required this.theme,
     required this.onTap,
+    required this.onLeaderboard,
   });
 
   @override
@@ -428,8 +447,22 @@ class _CampaignNode extends StatelessWidget {
             ),
           ),
         ),
-        const SizedBox(height: 6),
+        const SizedBox(height: 4),
         _StarsRow(stars: entry.stars, dimmed: locked, theme: theme),
+        IconButton(
+          visualDensity: VisualDensity.compact,
+          padding: EdgeInsets.zero,
+          constraints: const BoxConstraints(minWidth: 28, minHeight: 28),
+          tooltip: 'Clasificacion',
+          icon: Icon(
+            Icons.emoji_events,
+            size: 18,
+            color: locked
+                ? theme.hudText.withValues(alpha: 0.25)
+                : theme.exitCell,
+          ),
+          onPressed: onLeaderboard,
+        ),
       ],
     );
   }
@@ -465,7 +498,7 @@ class _StarsRow extends StatelessWidget {
 }
 
 /// Pinta el camino serpenteante que une los centros de los nodos. Los tramos
-/// que llegan a un nodo desbloqueado/completado se dibujan sólidos y en color
+/// que llegan a un nodo desbloqueado/completado se dibujan s?lidos y en color
 /// de acento; los que llegan a un nodo bloqueado, punteados y apagados.
 class _TrailPainter extends CustomPainter {
   final List<Offset> centers;
@@ -496,13 +529,13 @@ class _TrailPainter extends CustomPainter {
     for (var i = 1; i < centers.length; i++) {
       final a = centers[i - 1];
       final b = centers[i];
-      // Curva suave: control en el punto medio con un pequeño desvío.
+      // Curva suave: control en el punto medio con un peque?o desv?o.
       final mid = Offset((a.dx + b.dx) / 2, (a.dy + b.dy) / 2);
       final path = Path()
         ..moveTo(a.dx, a.dy)
         ..quadraticBezierTo(mid.dx, a.dy + (b.dy - a.dy) * 0.35, b.dx, b.dy);
 
-      // El tramo está "recorrido" si el nodo destino ya es jugable.
+      // El tramo est? "recorrido" si el nodo destino ya es jugable.
       final reached = statuses[i] != LevelStatus.locked;
       if (reached) {
         canvas.drawPath(path, active);
@@ -535,12 +568,14 @@ class _GeneratedTile extends StatelessWidget {
   final ThemeConfig theme;
   final String label;
   final VoidCallback onTap;
+  final VoidCallback onLeaderboard;
 
   const _GeneratedTile({
     required this.entry,
     required this.theme,
     required this.label,
     required this.onTap,
+    required this.onLeaderboard,
   });
 
   @override
@@ -577,7 +612,14 @@ class _GeneratedTile extends StatelessWidget {
                 ),
               ),
               _StarsRow(stars: entry.stars, theme: theme),
-              const SizedBox(width: 6),
+              IconButton(
+                tooltip: 'Clasificaci?n',
+                visualDensity: VisualDensity.compact,
+                padding: EdgeInsets.zero,
+                constraints: const BoxConstraints(minWidth: 36, minHeight: 36),
+                icon: Icon(Icons.emoji_events, color: theme.exitCell, size: 22),
+                onPressed: onLeaderboard,
+              ),
               Icon(Icons.chevron_right, color: theme.primary),
             ],
           ),
