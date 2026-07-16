@@ -4,6 +4,7 @@
   "homeTagline": "Despeja el tablero. Sobrevive.",
   "playButton": "JUGAR",
   "aiLevelBuilderButton": "CREAR NIVEL CON IA",
+  "survivalModeButton": "MODO SUPERVIVENCIA",
   "settingsTitle": "Ajustes",
   "settingsTooltip": "Ajustes",
   "settingsSoundSection": "Sonido",

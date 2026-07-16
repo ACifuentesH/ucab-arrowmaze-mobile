@@ -122,6 +122,12 @@ abstract class AppLocalizations {
   /// **'AI LEVEL BUILDER'**
   String get aiLevelBuilderButton;
 
+  /// Home button that starts a timed survival run
+  ///
+  /// In en, this message translates to:
+  /// **'SURVIVAL MODE'**
+  String get survivalModeButton;
+
   /// Title of the settings screen
   ///
   /// In en, this message translates to:

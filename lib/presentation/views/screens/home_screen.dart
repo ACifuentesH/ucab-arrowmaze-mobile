@@ -10,6 +10,7 @@ import 'package:arrow_maze/presentation/views/screens/level_select_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/register_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/settings_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/survival_game_screen.dart';
 import 'package:arrow_maze/presentation/views/widgets/animated_logo.dart';
 import 'package:arrow_maze/presentation/views/widgets/login_prompt_dialog.dart';
 
@@ -24,6 +25,9 @@ class HomeScreen extends ConsumerStatefulWidget {
 
   /// Key estable del botón "JUGAR" para las pruebas de navegación.
   static const Key playButtonKey = Key('home_play_button');
+
+  /// Key estable del botón "MODO SUPERVIVENCIA" para las pruebas de navegación.
+  static const Key survivalButtonKey = Key('home_survival_button');
 
   /// Key estable del ícono de cuenta (menú de usuario autenticado).
   static const Key accountButtonKey = Key('home_account_button');
@@ -52,6 +56,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     Navigator.push(
       context,
       MaterialPageRoute(builder: (_) => const LevelSelectScreen()),
+    );
+  }
+
+  void _goToSurvival() {
+    // Nueva partida limpia: evita reutilizar un SurvivalViewModel ya finalizado.
+    ref.invalidate(survivalViewModelProvider);
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const SurvivalGameScreen()),
     );
   }
 
@@ -207,6 +220,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                     ),
                     icon: const Icon(Icons.auto_awesome, size: 18),
                     label: Text(l.aiLevelBuilderButton),
+                  ),
+                  const SizedBox(height: 16),
+                  OutlinedButton.icon(
+                    key: HomeScreen.survivalButtonKey,
+                    style: OutlinedButton.styleFrom(
+                      foregroundColor: const Color(0xFFFF6B35),
+                      side: const BorderSide(color: Color(0xFFFF6B35)),
+                      minimumSize: const Size(200, 48),
+                      textStyle: const TextStyle(
+                          fontSize: 14, fontWeight: FontWeight.bold),
+                      shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(14)),
+                    ),
+                    onPressed: _goToSurvival,
+                    icon: const Icon(Icons.local_fire_department, size: 20),
+                    label: Text(l.survivalModeButton),
                   ),
                 ],
               ),

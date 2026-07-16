@@ -21,6 +21,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get aiLevelBuilderButton => 'AI LEVEL BUILDER';
 
   @override
+  String get survivalModeButton => 'SURVIVAL MODE';
+
+  @override
   String get settingsTitle => 'Settings';
 
   @override

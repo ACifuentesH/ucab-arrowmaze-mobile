@@ -16,6 +16,10 @@
   "@aiLevelBuilderButton": {
     "description": "Home button that opens the AI level generator"
   },
+  "survivalModeButton": "SURVIVAL MODE",
+  "@survivalModeButton": {
+    "description": "Home button that starts a timed survival run"
+  },
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Title of the settings screen"
