@@ -5,7 +5,7 @@
   "playButton": "JUGAR",
   "creativeButton": "CREATIVO",
   "survivalModeButton": "MODO CONTRA RELOJ",
-  "survivalLeaderboardTitle": "Ranking Contra reloj",
+  "survivalLeaderboardTitle": "Clasificación Contra Reloj",
   "survivalLeaderboardEmpty": "Aún no hay marcas registradas",
   "survivalLeaderboardError": "No se pudo cargar el ranking de contra reloj. Revisa tu conexión e inténtalo de nuevo.",
   "survivalLeaderboardRetry": "Reintentar",

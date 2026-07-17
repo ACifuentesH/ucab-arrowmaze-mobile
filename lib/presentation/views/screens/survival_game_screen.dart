@@ -97,6 +97,13 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
                 boardsCleared: survival.boardsCleared,
                 isUrgent: urgent,
                 onExit: _confirmExit,
+                onViewRanking: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => const SurvivalLeaderboardScreen(),
+                    ),
+                  );
+                },
               ),
               Expanded(
                 child: AbsorbPointer(
@@ -158,12 +165,14 @@ class _TopBar extends StatelessWidget {
     required this.boardsCleared,
     required this.isUrgent,
     required this.onExit,
+    required this.onViewRanking,
   });
 
   final int timeLeftSeconds;
   final int boardsCleared;
   final bool isUrgent;
   final VoidCallback onExit;
+  final VoidCallback onViewRanking;
 
   static const ThemeConfig _t = ThemeConfig.dark;
 
@@ -198,6 +207,18 @@ class _TopBar extends StatelessWidget {
             ),
           ),
           const Spacer(),
+          IconButton(
+            tooltip: AppLocalizations.of(context)!.survivalViewRanking,
+            onPressed: onViewRanking,
+            icon: Icon(Icons.emoji_events, color: _t.exitCell),
+            style: IconButton.styleFrom(
+              backgroundColor: _t.exitCell.withValues(alpha: 0.12),
+              side: BorderSide(
+                color: _t.exitCell.withValues(alpha: 0.75),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
           Icon(Icons.layers, color: _t.hudText, size: 18),
           const SizedBox(width: 6),
           Text(

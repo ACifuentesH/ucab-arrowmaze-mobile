@@ -24,7 +24,7 @@ class AppLocalizationsEs extends AppLocalizations {
   String get survivalModeButton => 'MODO CONTRA RELOJ';
 
   @override
-  String get survivalLeaderboardTitle => 'Ranking Contra reloj';
+  String get survivalLeaderboardTitle => 'Clasificación Contra Reloj';
 
   @override
   String get survivalLeaderboardEmpty => 'Aún no hay marcas registradas';
