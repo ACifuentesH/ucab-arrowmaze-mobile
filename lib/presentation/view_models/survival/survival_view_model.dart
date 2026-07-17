@@ -21,6 +21,7 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
   final SubmitSurvivalRunUseCase _submitSurvivalRun;
   final ILevelCatalogService _levelCatalog;
   final IAudioService _audioService;
+  final bool Function() _isAuthenticated;
 
   Timer? _timer;
   bool _advancingToNext = false;
@@ -35,11 +36,13 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     required SubmitSurvivalRunUseCase submitSurvivalRun,
     required ILevelCatalogService levelCatalog,
     required IAudioService audioService,
-  })  : _game = game,
-        _submitSurvivalRun = submitSurvivalRun,
-        _levelCatalog = levelCatalog,
-        _audioService = audioService,
-        super(const SurvivalState.initial());
+    required bool Function() isAuthenticated,
+  }) : _game = game,
+       _submitSurvivalRun = submitSurvivalRun,
+       _levelCatalog = levelCatalog,
+       _audioService = audioService,
+       _isAuthenticated = isAuthenticated,
+       super(const SurvivalState.initial());
 
   Future<void> start({
     int durationSeconds = 120,
@@ -115,6 +118,11 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
 
     state = state.copyWith(phase: SurvivalPhase.submitting, errorMessage: null);
 
+    if (!_isAuthenticated()) {
+      state = state.copyWith(phase: SurvivalPhase.success);
+      return;
+    }
+
     final playedDurationSeconds = _durationSeconds; // llega a 0s siempre
     final input = SubmitSurvivalInput(
       boardsSolved: state.boardsCleared,
@@ -162,4 +170,3 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     super.dispose();
   }
 }
-

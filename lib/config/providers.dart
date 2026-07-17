@@ -85,20 +85,16 @@ final sharedPreferencesProvider = Provider<SharedPreferences>(
 
 // ?? Infraestructura: repositorios ?????????????????????????????????????????????
 
-final levelBuilderProvider = Provider<LevelBuilder>(
-  (_) => LevelBuilder(),
-);
+final levelBuilderProvider = Provider<LevelBuilder>((_) => LevelBuilder());
 
 final generatedLevelRepositoryProvider = Provider<IGeneratedLevelRepository>(
-  (ref) => SharedPrefsGeneratedLevelRepository(
-    ref.read(sharedPreferencesProvider),
-  ),
+  (ref) =>
+      SharedPrefsGeneratedLevelRepository(ref.read(sharedPreferencesProvider)),
 );
 
 final playerProgressRepositoryProvider = Provider<IPlayerProgressRepository>(
-  (ref) => SharedPrefsPlayerProgressRepository(
-    ref.read(sharedPreferencesProvider),
-  ),
+  (ref) =>
+      SharedPrefsPlayerProgressRepository(ref.read(sharedPreferencesProvider)),
 );
 
 // ChainedLevelRepository: Chain of Responsibility ? assets ? generated.
@@ -116,9 +112,7 @@ final timeServiceProvider = Provider<ITimeService>(
   (_) => StopwatchTimeService(),
 );
 
-final audioServiceProvider = Provider<IAudioService>(
-  (_) => AudioService(),
-);
+final audioServiceProvider = Provider<IAudioService>((_) => AudioService());
 
 // ── Infraestructura: AI generator ────────────────────────────────────────────
 // Delega en el backend (POST /levels/generate) vía apiClientProvider: el
@@ -198,8 +192,9 @@ final generateLevelUseCaseProvider = Provider<GenerateLevelUseCase>(
   ),
 );
 
-final getLevelCatalogUseCaseProvider =
-    FutureProvider<List<LevelPreview>>((ref) {
+final getLevelCatalogUseCaseProvider = FutureProvider<List<LevelPreview>>((
+  ref,
+) {
   return GetLevelCatalogUseCase(
     catalog: ref.read(levelCatalogServiceProvider),
   ).execute();
@@ -209,8 +204,8 @@ final getLevelCatalogUseCaseProvider =
 
 final generateLevelViewModelProvider =
     StateNotifierProvider<GenerateLevelViewModel, GenerateLevelState>(
-  (ref) => GenerateLevelViewModel(ref.read(generateLevelUseCaseProvider)),
-);
+      (ref) => GenerateLevelViewModel(ref.read(generateLevelUseCaseProvider)),
+    );
 
 // --- Infraestructura: apiClient ---
 final httpClientProvider = Provider<http.Client>((_) => http.Client());
@@ -282,10 +277,10 @@ final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
 
 final leaderboardViewModelProvider =
     StateNotifierProvider<LeaderboardViewModel, LeaderboardState>(
-  (ref) => LeaderboardViewModel(
-    getLeaderboard: ref.read(getLeaderboardUseCaseProvider),
-  ),
-);
+      (ref) => LeaderboardViewModel(
+        getLeaderboard: ref.read(getLeaderboardUseCaseProvider),
+      ),
+    );
 
 // --- Survival (modo supervivencia) ---
 
@@ -301,10 +296,10 @@ final submitSurvivalRunUseCaseProvider = Provider<SubmitSurvivalRunUseCase>(
 
 final getSurvivalLeaderboardUseCaseProvider =
     Provider<GetSurvivalLeaderboardUseCase>(
-  (ref) => GetSurvivalLeaderboardUseCase(
-    repository: ref.read(survivalRepositoryProvider),
-  ),
-);
+      (ref) => GetSurvivalLeaderboardUseCase(
+        repository: ref.read(survivalRepositoryProvider),
+      ),
+    );
 
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
@@ -336,8 +331,7 @@ final progressSyncCoordinatorProvider = Provider<IProgressSyncCoordinator>(
 
 // --- AuthViewModel ---
 
-final authViewModelProvider =
-    StateNotifierProvider<AuthViewModel, AuthState>(
+final authViewModelProvider = StateNotifierProvider<AuthViewModel, AuthState>(
   (ref) => AuthViewModel(
     login: ref.read(loginUseCaseProvider),
     register: ref.read(registerUseCaseProvider),
@@ -350,8 +344,7 @@ final authViewModelProvider =
 
 // --- GameViewModel ---
 
-final gameViewModelProvider =
-    StateNotifierProvider<GameViewModel, GameState>(
+final gameViewModelProvider = StateNotifierProvider<GameViewModel, GameState>(
   (ref) => GameViewModel(
     loadLevel: ref.read(loadLevelUseCaseProvider),
     removeArrow: ref.read(removeArrowUseCaseProvider),
@@ -367,43 +360,41 @@ final gameViewModelProvider =
 // --- SurvivalViewModel ---
 
 final survivalViewModelProvider =
-    StateNotifierProvider<SurvivalViewModel, SurvivalState>(
-  (ref) {
-    final game = ref.read(gameViewModelProvider.notifier);
-    final vm = SurvivalViewModel(
-      game: game,
-      submitSurvivalRun: ref.read(submitSurvivalRunUseCaseProvider),
-      levelCatalog: ref.read(levelCatalogServiceProvider),
-      audioService: ref.read(audioServiceProvider),
-    );
+    StateNotifierProvider<SurvivalViewModel, SurvivalState>((ref) {
+      final game = ref.read(gameViewModelProvider.notifier);
+      final vm = SurvivalViewModel(
+        game: game,
+        submitSurvivalRun: ref.read(submitSurvivalRunUseCaseProvider),
+        levelCatalog: ref.read(levelCatalogServiceProvider),
+        audioService: ref.read(audioServiceProvider),
+        isAuthenticated: () =>
+            ref.read(authViewModelProvider).status == AuthStatus.authenticated,
+      );
 
-    // Orquestacion: ante victoria/derrota del tablero, el superviviente
-    // carga automaticamente el siguiente nivel (sin overlays de campana).
-    ref.listen<GameState>(gameViewModelProvider, (_, next) {
-      vm.onGameStateChanged(next);
+      // Orquestacion: ante victoria del tablero, el superviviente carga
+      // automaticamente el siguiente nivel (sin overlays de campana).
+      ref.listen<GameState>(gameViewModelProvider, (_, next) {
+        vm.onGameStateChanged(next);
+      });
+
+      return vm;
     });
-
-    return vm;
-  },
-);
 
 // --- LevelSelectViewModel ---
 
 final levelSelectViewModelProvider =
     StateNotifierProvider<LevelSelectViewModel, LevelSelectState>(
-  (ref) => LevelSelectViewModel(
-    getSelection: ref.read(getLevelSelectionUseCaseProvider),
-  ),
-);
+      (ref) => LevelSelectViewModel(
+        getSelection: ref.read(getLevelSelectionUseCaseProvider),
+      ),
+    );
 
 // --- SettingsViewModel (idioma + mute) ---
 
 final settingsViewModelProvider =
     StateNotifierProvider<SettingsViewModel, SettingsState>(
-  (ref) => SettingsViewModel(
-    audioService: ref.read(audioServiceProvider),
-  ),
-);
+      (ref) => SettingsViewModel(audioService: ref.read(audioServiceProvider)),
+    );
 
 /// Adapter Riverpod: invalida estado en memoria al cerrar sesi?n, para que
 /// la UI refleje progreso vac?o (invitado) sin acoplar el ViewModel de auth
