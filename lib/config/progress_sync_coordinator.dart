@@ -7,14 +7,17 @@ class ProgressSyncCoordinator implements IProgressSyncCoordinator {
   final HydrateProgressUseCase _hydrate;
   final PushProgressUseCase _push;
   final void Function() _onHydrated;
+  final void Function(String levelId) _onLeaderboardUpdated;
 
   const ProgressSyncCoordinator({
     required HydrateProgressUseCase hydrate,
     required PushProgressUseCase push,
     required void Function() onHydrated,
-  })  : _hydrate = hydrate,
-        _push = push,
-        _onHydrated = onHydrated;
+    required void Function(String levelId) onLeaderboardUpdated,
+  }) : _hydrate = hydrate,
+       _push = push,
+       _onHydrated = onHydrated,
+       _onLeaderboardUpdated = onLeaderboardUpdated;
 
   @override
   Future<void> pullAndApplyLocal() async {
@@ -29,12 +32,15 @@ class ProgressSyncCoordinator implements IProgressSyncCoordinator {
     required int lastMoves,
     required int lastTimeSeconds,
     required String currentLevelId,
-  }) =>
-      _push.execute(
-        lastLevelId: lastLevelId,
-        lastScore: lastScore,
-        lastMoves: lastMoves,
-        lastTimeSeconds: lastTimeSeconds,
-        currentLevelId: currentLevelId,
-      );
+  }) async {
+    final didWrite = await _push.execute(
+      lastLevelId: lastLevelId,
+      lastScore: lastScore,
+      lastMoves: lastMoves,
+      lastTimeSeconds: lastTimeSeconds,
+      currentLevelId: currentLevelId,
+    );
+
+    if (didWrite) _onLeaderboardUpdated(lastLevelId);
+  }
 }

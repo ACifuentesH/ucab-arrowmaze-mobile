@@ -17,11 +17,12 @@ class PushProgressUseCase {
     required SyncProgressUseCase sync,
     required IPlayerProgressRepository local,
     required ITokenStorage tokens,
-  })  : _sync = sync,
-        _local = local,
-        _tokens = tokens;
+  }) : _sync = sync,
+       _local = local,
+       _tokens = tokens;
 
-  Future<void> execute({
+  /// Devuelve `true` únicamente cuando el servidor confirma la escritura.
+  Future<bool> execute({
     required String lastLevelId,
     required int lastScore,
     required int lastMoves,
@@ -29,7 +30,7 @@ class PushProgressUseCase {
     required String currentLevelId,
   }) async {
     final token = await _tokens.read();
-    if (token == null || token.isEmpty) return;
+    if (token == null || token.isEmpty) return false;
 
     try {
       final all = await _local.findAll();
@@ -50,19 +51,24 @@ class PushProgressUseCase {
         bestScores[lastLevelId] = lastScore;
       }
 
-      await _sync.push(ProgressUpdate(
-        completedLevels: completedLevels,
-        bestScores: Map<String, int>.from(bestScores),
-        currentLevelId: currentLevelId,
-        lastLevelId: lastLevelId,
-        lastScore: lastScore,
-        lastMoves: lastMoves,
-        lastTimeSeconds: lastTimeSeconds,
-      ));
+      await _sync.push(
+        ProgressUpdate(
+          completedLevels: completedLevels,
+          bestScores: Map<String, int>.from(bestScores),
+          currentLevelId: currentLevelId,
+          lastLevelId: lastLevelId,
+          lastScore: lastScore,
+          lastMoves: lastMoves,
+          lastTimeSeconds: lastTimeSeconds,
+        ),
+      );
+      return true;
     } on ApiError {
       // Silencioso: el progreso local ya quedó persistido.
+      return false;
     } catch (_) {
       // Silencioso ante fallos inesperados de transporte.
+      return false;
     }
   }
 }

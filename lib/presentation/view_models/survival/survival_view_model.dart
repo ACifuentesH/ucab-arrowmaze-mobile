@@ -22,6 +22,7 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
   final ILevelCatalogService _levelCatalog;
   final IAudioService _audioService;
   final bool Function() _isAuthenticated;
+  final void Function() _onLeaderboardUpdated;
 
   Timer? _timer;
   bool _advancingToNext = false;
@@ -37,11 +38,13 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     required ILevelCatalogService levelCatalog,
     required IAudioService audioService,
     required bool Function() isAuthenticated,
+    required void Function() onLeaderboardUpdated,
   }) : _game = game,
        _submitSurvivalRun = submitSurvivalRun,
        _levelCatalog = levelCatalog,
        _audioService = audioService,
        _isAuthenticated = isAuthenticated,
+       _onLeaderboardUpdated = onLeaderboardUpdated,
        super(const SurvivalState.initial());
 
   Future<void> start({
@@ -132,6 +135,7 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
 
     try {
       await _submitSurvivalRun.execute(input);
+      _onLeaderboardUpdated();
       if (!mounted) return;
       state = state.copyWith(phase: SurvivalPhase.success);
     } catch (e) {

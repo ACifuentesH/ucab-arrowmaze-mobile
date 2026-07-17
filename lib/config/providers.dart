@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arrow_maze/application/builders/level_builder.dart';
 import 'package:arrow_maze/application/commands/command_invoker.dart';
 import 'package:arrow_maze/application/dtos/level_preview.dart';
+import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
 import 'package:arrow_maze/application/ports/i_generated_level_repository.dart';
@@ -268,7 +269,7 @@ final sessionCleanupProvider = Provider<ISessionCleanup>(
 
 // AOP: CachingUseCaseProxy memoiza el leaderboard por (levelId, limit) durante
 // un TTL corto, evitando golpear la red en cada refresco de la pantalla.
-final getLeaderboardUseCaseProvider = Provider<GetLeaderboardUseCase>(
+final getLeaderboardUseCaseProvider = Provider<CachingUseCaseProxy>(
   (ref) => CachingUseCaseProxy(
     delegate: GetLeaderboardUseCase(api: ref.read(apiClientProvider)),
     ttl: const Duration(seconds: 30),
@@ -301,6 +302,14 @@ final getSurvivalLeaderboardUseCaseProvider =
       ),
     );
 
+/// Top 10 del ranking de supervivencia (partidas de 120 s).
+final survivalLeaderboardProvider =
+    FutureProvider.autoDispose<List<SurvivalEntryDto>>((ref) {
+      return ref
+          .read(getSurvivalLeaderboardUseCaseProvider)
+          .execute(durationSeconds: 120, limit: 10);
+    });
+
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
@@ -326,6 +335,8 @@ final progressSyncCoordinatorProvider = Provider<IProgressSyncCoordinator>(
     hydrate: ref.read(hydrateProgressUseCaseProvider),
     push: ref.read(pushProgressUseCaseProvider),
     onHydrated: () => ref.invalidate(levelSelectViewModelProvider),
+    onLeaderboardUpdated: (levelId) =>
+        ref.read(getLeaderboardUseCaseProvider).invalidate(levelId: levelId),
   ),
 );
 
@@ -369,6 +380,7 @@ final survivalViewModelProvider =
         audioService: ref.read(audioServiceProvider),
         isAuthenticated: () =>
             ref.read(authViewModelProvider).status == AuthStatus.authenticated,
+        onLeaderboardUpdated: () => ref.invalidate(survivalLeaderboardProvider),
       );
 
       // Orquestacion: ante victoria del tablero, el superviviente carga
