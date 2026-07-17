@@ -350,5 +350,12 @@ assets/
 
 ---
 
-**Equipo** — UCAB · Desarrollo de Software · 2026  
+## Equipo
+
+UCAB · Desarrollo de Software · 2026
+
+- **Alejandro Cifuentes** — [@ACifuentesH](https://github.com/ACifuentesH)
+- **Levin Jiménez** — [@LevinJimenez](https://github.com/LevinJimenez)
+- **Zarah Roa**
+
 Cliente móvil: [ACifuentesH/ucab-arrowmaze-mobile](https://github.com/ACifuentesH/ucab-arrowmaze-mobile) · Backend: [LevinJimenez/ucab-arrowmaze-api](https://github.com/LevinJimenez/ucab-arrowmaze-api)
