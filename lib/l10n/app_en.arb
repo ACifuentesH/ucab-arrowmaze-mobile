@@ -12,10 +12,52 @@
   "@playButton": {
     "description": "Primary button on home that starts the campaign"
   },
-  "aiLevelBuilderButton": "AI LEVEL BUILDER",
-  "@aiLevelBuilderButton": {
-    "description": "Home button that opens the AI level generator"
+  "creativeButton": "CREATIVE",
+  "@creativeButton": {
+    "description": "Level select button that opens the AI level generator (map builder)"
   },
+  "survivalModeButton": "SURVIVAL MODE",
+  "@survivalModeButton": {
+    "description": "Home button that starts a timed survival run"
+  },
+  "survivalLeaderboardTitle": "Survival Leaderboard",
+  "@survivalLeaderboardTitle": {
+    "description": "Title of the survival mode leaderboard screen"
+  },
+  "survivalLeaderboardEmpty": "No records yet",
+  "@survivalLeaderboardEmpty": {
+    "description": "Empty state when survival leaderboard has no entries"
+  },
+  "survivalLeaderboardError": "Could not load the survival ranking. Check your connection and try again.",
+  "@survivalLeaderboardError": {
+    "description": "Friendly error when survival leaderboard fails to load"
+  },
+  "survivalLeaderboardRetry": "Retry",
+  "@survivalLeaderboardRetry": {
+    "description": "Retry button on survival leaderboard error state"
+  },
+  "survivalPlayAgain": "Play again",
+  "@survivalPlayAgain": {
+    "description": "Primary button on survival end overlay to start a new run"
+  },
+  "survivalViewRanking": "View ranking",
+  "@survivalViewRanking": {
+    "description": "Secondary button on survival end overlay to open the leaderboard"
+  },
+  "survivalBackToMenu": "Back to menu",
+  "@survivalBackToMenu": {
+    "description": "Exit button on survival error overlay to leave the stuck error loop"
+  },
+  "survivalBoardsSolved": "{count, plural, =1{board} other{boards}}",
+  "@survivalBoardsSolved": {
+    "description": "Label under the boards-solved count on a survival ranking row",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+
   "settingsTitle": "Settings",
   "@settingsTitle": {
     "description": "Title of the settings screen"
@@ -169,5 +211,9 @@
   "loginPromptGuestButton": "Continue as guest",
   "@loginPromptGuestButton": {
     "description": "Button in the login prompt sheet that dismisses it and proceeds without logging in"
+  },
+  "error_invalid_email": "The email address format is invalid.",
+  "@error_invalid_email": {
+    "description": "Banner message when the API rejects the email format (validation code invalid_email)"
   }
 }

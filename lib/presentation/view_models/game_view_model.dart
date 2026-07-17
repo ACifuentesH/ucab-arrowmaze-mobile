@@ -79,6 +79,7 @@ class GameViewModel extends StateNotifier<GameState> {
   }) {
     _queue = List.unmodifiable(queue);
     _queueIndex = startIndex;
+    state = state.copyWith(mode: GamePlayMode.campaign);
     return _loadCurrent();
   }
 
@@ -86,9 +87,14 @@ class GameViewModel extends StateNotifier<GameState> {
   Future<void> loadLevel(
     String levelId, {
     Difficulty difficulty = Difficulty.easy,
+    GamePlayMode mode = GamePlayMode.single,
+    String? levelName,
   }) {
-    _queue = [PlayableLevel(id: levelId, difficulty: difficulty)];
+    _queue = [
+      PlayableLevel(id: levelId, difficulty: difficulty, name: levelName),
+    ];
     _queueIndex = 0;
+    state = state.copyWith(mode: mode);
     return _loadCurrent();
   }
 
@@ -112,6 +118,8 @@ class GameViewModel extends StateNotifier<GameState> {
       state = state.copyWith(
         board: board,
         currentLevelId: LevelId(level.id),
+        currentLevelName: level.name,
+        clearLevelName: level.name == null,
         isLoading: false,
         elapsedSeconds: 0,
         clearBlocked: true,
@@ -119,7 +127,9 @@ class GameViewModel extends StateNotifier<GameState> {
         hasNextLevel: _hasNext,
         deferLevelCleared: false,
       );
-      _startTimer();
+      if (state.mode != GamePlayMode.survival) {
+        _startTimer();
+      }
       await _audioService.playMusic();
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
@@ -131,8 +141,13 @@ class GameViewModel extends StateNotifier<GameState> {
     final board = state.board;
     if (board == null) return false;
 
+    final isSurvival = state.mode == GamePlayMode.survival;
     final arrowSnapshot = board.arrowById(arrowId);
-    final valid = _removeArrow.execute(board, arrowId);
+    final valid = _removeArrow.execute(
+      board,
+      arrowId,
+      applyLifePenalty: !isSurvival,
+    );
 
     if (valid) {
       // Si esta salida vacía el tablero, el Board ya está en levelCleared, pero
@@ -145,17 +160,22 @@ class GameViewModel extends StateNotifier<GameState> {
         board: board,
         escapingArrow: arrowSnapshot,
         clearBlocked: true,
-        deferLevelCleared: clearsBoard,
+        deferLevelCleared: clearsBoard && !isSurvival,
       );
       Future.delayed(const Duration(milliseconds: 350), () {
         if (mounted) state = state.copyWith(clearEscaping: true);
       });
-      if (clearsBoard) {
+      if (clearsBoard && !isSurvival) {
         Future.delayed(victoryRevealDelay, () {
           if (!mounted) return;
           state = state.copyWith(deferLevelCleared: false);
         });
       }
+    } else if (isSurvival) {
+      // Supervivencia: error = reinicio inmediato del tablero actual (sin vidas).
+      _processEvents(board);
+      unawaited(restart());
+      return false;
     } else {
       state = state.copyWith(
         board: board,
@@ -187,7 +207,9 @@ class GameViewModel extends StateNotifier<GameState> {
         elapsedSeconds: 0,
         deferLevelCleared: false,
       );
-      _startTimer();
+      if (state.mode != GamePlayMode.survival) {
+        _startTimer();
+      }
       await _audioService.playMusic();
     } catch (e) {
       state = state.copyWith(isLoading: false, errorMessage: e.toString());
@@ -250,7 +272,9 @@ class GameViewModel extends StateNotifier<GameState> {
         _audioService.playSfx(SoundEffect.levelCleared);
         _audioService.stopMusic();
         _stopTimer();
-        unawaited(_registerCompletion(board));
+        if (state.mode != GamePlayMode.survival) {
+          unawaited(_registerCompletion(board));
+        }
       } else if (event is GameOver) {
         _audioService.playSfx(SoundEffect.gameOver);
         _audioService.stopMusic();

@@ -43,6 +43,16 @@ class RemoveArrowTestApi {
     return this;
   }
 
+  RemoveArrowTestApi whenArrowIsTappedWithoutLifePenalty(String arrowId) {
+    _lastResult = RemoveArrowUseCase(invoker: _invoker).execute(
+      _board,
+      arrowId,
+      applyLifePenalty: false,
+    );
+    _events.addAll(_board.pullEvents());
+    return this;
+  }
+
   RemoveArrowTestApi whenMoveIsUndone() {
     _undoResult = UndoMoveUseCase(invoker: _invoker).execute();
     return this;

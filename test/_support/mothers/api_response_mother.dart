@@ -81,7 +81,69 @@ class ApiResponseMother {
   static Map<String, dynamic> levelDto({String id = 'level_1'}) =>
       {'success': true, 'data': LevelDefinitionMother.backendDtoJson(id: id)};
 
+  /// POST /levels/generate 200 — el backend sólo devuelve el blob de datos
+  /// (sin id/name: eso lo completa el cliente a partir del LevelSpec).
+  static Map<String, dynamic> generatedLevelData() => {
+        'success': true,
+        'data': {
+          'cells': [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+          ],
+          'arrows': [
+            {
+              'id': 'a1',
+              'path': [
+                [0, 0],
+                [0, 1],
+              ],
+              'color': '#EF476F',
+            },
+          ],
+          'lives': 5,
+        },
+      };
+
+  /// POST /levels/generate 200 — silueta dibujada lejos de (0,0), como hace
+  /// el modelo en la práctica (usa cualquier esquina del grid pedido).
+  static Map<String, dynamic> generatedLevelDataOffOrigin() => {
+        'success': true,
+        'data': {
+          'cells': [
+            [5, 8],
+            [5, 9],
+            [6, 8],
+          ],
+          'arrows': [
+            {
+              'id': 'a1',
+              'path': [
+                [5, 8],
+                [5, 9],
+              ],
+              'color': '#EF476F',
+            },
+          ],
+          'lives': 5,
+        },
+      };
+
   /// Error genérico del backend.
   static Map<String, dynamic> error(String message) =>
       {'success': false, 'message': message};
+
+  /// 400 de validación con `details` (paths / regex), como emite el backend.
+  static Map<String, dynamic> validationErrorWithEmailDetails() => {
+        'success': false,
+        'message': 'Validation failed',
+        'details': [
+          {
+            'path': ['email'],
+            'message': 'Invalid string',
+            'validation': 'regex',
+            'regex': r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+          },
+        ],
+      };
 }

@@ -10,7 +10,9 @@ import 'package:arrow_maze/config/providers.dart';
 import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/leaderboard_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 
 /// Pantalla de seleccion: la campa?a se dibuja como un sendero progresivo
 /// (nodos encadenados que serpentean hacia abajo, estilo lobby de juego de
@@ -57,6 +59,7 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
     await ref.read(gameViewModelProvider.notifier).loadLevel(
           entry.preview.id,
           difficulty: entry.preview.difficulty,
+          levelName: entry.preview.name,
         );
     if (!mounted) return;
     await Navigator.push(
@@ -72,6 +75,26 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
       MaterialPageRoute(
         builder: (_) => LeaderboardScreen(levelId: levelId),
       ),
+    );
+  }
+
+  /// El backend exige sesión para `POST /levels/generate` (JWT): si no hay
+  /// una activa, se pide login antes de entrar al builder en vez de dejar
+  /// que la generación falle con un error técnico.
+  Future<void> _goToCreative() async {
+    final auth = ref.read(authViewModelProvider);
+    if (!auth.isAuthenticated) {
+      await Navigator.push(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginScreen()),
+      );
+      if (!mounted) return;
+      if (!ref.read(authViewModelProvider).isAuthenticated) return;
+    }
+    if (!mounted) return;
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const GenerateLevelScreen()),
     );
   }
 
@@ -95,6 +118,12 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
           : ListView(
               padding: const EdgeInsets.fromLTRB(20, 20, 20, 32),
               children: [
+                _CreativeButton(
+                  theme: _t,
+                  label: l.creativeButton,
+                  onTap: _goToCreative,
+                ),
+                const SizedBox(height: 24),
                 _SectionTitle(l.campaignSection, theme: _t),
                 const SizedBox(height: 8),
                 _CampaignProgressBar(campaign: campaign, theme: _t),
@@ -153,6 +182,57 @@ class _SectionTitle extends StatelessWidget {
           letterSpacing: 2,
         ),
       );
+}
+
+/// CTA para abrir el generador de niveles con IA (map builder). Vive junto a
+/// la campaña, no en Home: es donde el jugador ya está eligiendo qué jugar.
+class _CreativeButton extends StatelessWidget {
+  final ThemeConfig theme;
+  final String label;
+  final VoidCallback onTap;
+
+  const _CreativeButton({
+    required this.theme,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Material(
+      color: theme.primary.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: theme.primary.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.auto_awesome, color: theme.primary, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: theme.hudText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: theme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
 }
 
 /// Barra fina de progreso global de la campa?a (niveles completados / total).

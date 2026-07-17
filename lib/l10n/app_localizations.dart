@@ -116,11 +116,65 @@ abstract class AppLocalizations {
   /// **'PLAY'**
   String get playButton;
 
-  /// Home button that opens the AI level generator
+  /// Level select button that opens the AI level generator (map builder)
   ///
   /// In en, this message translates to:
-  /// **'AI LEVEL BUILDER'**
-  String get aiLevelBuilderButton;
+  /// **'CREATIVE'**
+  String get creativeButton;
+
+  /// Home button that starts a timed survival run
+  ///
+  /// In en, this message translates to:
+  /// **'SURVIVAL MODE'**
+  String get survivalModeButton;
+
+  /// Title of the survival mode leaderboard screen
+  ///
+  /// In en, this message translates to:
+  /// **'Survival Leaderboard'**
+  String get survivalLeaderboardTitle;
+
+  /// Empty state when survival leaderboard has no entries
+  ///
+  /// In en, this message translates to:
+  /// **'No records yet'**
+  String get survivalLeaderboardEmpty;
+
+  /// Friendly error when survival leaderboard fails to load
+  ///
+  /// In en, this message translates to:
+  /// **'Could not load the survival ranking. Check your connection and try again.'**
+  String get survivalLeaderboardError;
+
+  /// Retry button on survival leaderboard error state
+  ///
+  /// In en, this message translates to:
+  /// **'Retry'**
+  String get survivalLeaderboardRetry;
+
+  /// Primary button on survival end overlay to start a new run
+  ///
+  /// In en, this message translates to:
+  /// **'Play again'**
+  String get survivalPlayAgain;
+
+  /// Secondary button on survival end overlay to open the leaderboard
+  ///
+  /// In en, this message translates to:
+  /// **'View ranking'**
+  String get survivalViewRanking;
+
+  /// Exit button on survival error overlay to leave the stuck error loop
+  ///
+  /// In en, this message translates to:
+  /// **'Back to menu'**
+  String get survivalBackToMenu;
+
+  /// Label under the boards-solved count on a survival ranking row
+  ///
+  /// In en, this message translates to:
+  /// **'{count, plural, =1{board} other{boards}}'**
+  String survivalBoardsSolved(int count);
 
   /// Title of the settings screen
   ///
@@ -325,6 +379,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Continue as guest'**
   String get loginPromptGuestButton;
+
+  /// Banner message when the API rejects the email format (validation code invalid_email)
+  ///
+  /// In en, this message translates to:
+  /// **'The email address format is invalid.'**
+  String get error_invalid_email;
 }
 
 class _AppLocalizationsDelegate

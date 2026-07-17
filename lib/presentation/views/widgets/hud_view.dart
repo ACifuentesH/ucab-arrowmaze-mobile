@@ -8,11 +8,15 @@ import 'package:arrow_maze/presentation/view_models/game_state.dart';
 class HudView extends StatelessWidget {
   final GameState gameState;
   final VoidCallback? onToggleMute;
+  final bool showLevelTimer;
+  final bool showLives;
 
   const HudView({
     super.key,
     required this.gameState,
     this.onToggleMute,
+    this.showLevelTimer = true,
+    this.showLives = true,
   });
 
   static const ThemeConfig _t = ThemeConfig.dark;
@@ -27,41 +31,45 @@ class HudView extends StatelessWidget {
     final displaySeconds =
         limit != null ? (limit - elapsed).clamp(0, limit) : elapsed;
     final isUrgent = limit != null && displaySeconds <= 10;
+    final shouldShowLives =
+        showLives && gameState.mode != GamePlayMode.survival;
 
     return Container(
       color: _t.boardBackground,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          // Corazones
-          Row(
-            children: List.generate(_maxLivesToShow, (i) {
-              final active = i < livesCount;
-              return Icon(
-                active ? Icons.favorite : Icons.favorite_border,
-                color: active ? _t.lifeActive : _t.lifeEmpty,
-                size: 22,
-              );
-            }),
-          ),
-          const Spacer(),
-          // Cronómetro / cuenta regresiva
-          Icon(
-            limit != null ? Icons.timer : Icons.timer_outlined,
-            color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
-            size: 18,
-          ),
-          const SizedBox(width: 4),
-          Text(
-            _fmt(displaySeconds),
-            style: TextStyle(
-              color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              fontFeatures: const [FontFeature.tabularFigures()],
+          if (shouldShowLives)
+            Row(
+              children: List.generate(_maxLivesToShow, (i) {
+                final active = i < livesCount;
+                return Icon(
+                  active ? Icons.favorite : Icons.favorite_border,
+                  color: active ? _t.lifeActive : _t.lifeEmpty,
+                  size: 22,
+                );
+              }),
             ),
-          ),
-          const SizedBox(width: 16),
+          const Spacer(),
+          if (showLevelTimer) ...[
+            // Cronómetro / cuenta regresiva (por-lvl)
+            Icon(
+              limit != null ? Icons.timer : Icons.timer_outlined,
+              color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
+              size: 18,
+            ),
+            const SizedBox(width: 4),
+            Text(
+              _fmt(displaySeconds),
+              style: TextStyle(
+                color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFeatures: const [FontFeature.tabularFigures()],
+              ),
+            ),
+            const SizedBox(width: 16),
+          ],
           // Movimientos
           Icon(Icons.swap_horiz, color: _t.hudText, size: 18),
           const SizedBox(width: 4),

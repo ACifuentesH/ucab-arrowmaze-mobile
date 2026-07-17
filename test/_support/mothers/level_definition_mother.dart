@@ -55,6 +55,19 @@ class LevelDefinitionMother {
         arrows: const [],
       );
 
+  /// Silueta de una sola celda: sin espacio para que ProceduralArrowPlacer
+  /// coloque ninguna flecha (no hay corredor de escape posible).
+  static LevelDefinition tooSmallForArrows({String id = 'level_too_small'}) =>
+      LevelDefinition(
+        id: id,
+        name: 'Too Small',
+        lives: 3,
+        cells: const [
+          [0, 0],
+        ],
+        arrows: const [],
+      );
+
   /// Inválido: la flecha pisa una celda que no pertenece al tablero.
   static LevelDefinition withArrowOutsideBoard() => LevelDefinition(
         id: 'level_invalid_outside',

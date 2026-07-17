@@ -24,7 +24,10 @@ class ConflictError extends ApiError {
   const ConflictError(super.message);
 }
 
-/// 422 — body inválido según validaciones del backend.
+/// 400/422 — body inválido según validaciones del backend.
+///
+/// [message] es un código de aplicación estable (ej. `invalid_email`),
+/// no el payload crudo del backend.
 class ValidationError extends ApiError {
   const ValidationError(super.message);
 }

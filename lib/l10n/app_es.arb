@@ -3,7 +3,16 @@
   "appTitle": "Arrow Escape",
   "homeTagline": "Despeja el tablero. Sobrevive.",
   "playButton": "JUGAR",
-  "aiLevelBuilderButton": "CREAR NIVEL CON IA",
+  "creativeButton": "CREATIVO",
+  "survivalModeButton": "MODO SUPERVIVENCIA",
+  "survivalLeaderboardTitle": "Ranking Supervivencia",
+  "survivalLeaderboardEmpty": "Aún no hay marcas registradas",
+  "survivalLeaderboardError": "No se pudo cargar el ranking de supervivencia. Revisa tu conexión e inténtalo de nuevo.",
+  "survivalLeaderboardRetry": "Reintentar",
+  "survivalPlayAgain": "Jugar de nuevo",
+  "survivalViewRanking": "Ver Ranking",
+  "survivalBackToMenu": "Volver al menú",
+  "survivalBoardsSolved": "{count, plural, =1{tablero} other{tableros}}",
   "settingsTitle": "Ajustes",
   "settingsTooltip": "Ajustes",
   "settingsSoundSection": "Sonido",
@@ -37,5 +46,6 @@
   "loginPromptSubtitle": "Inicia sesión o crea una cuenta para sincronizar tus niveles y puntuaciones. También puedes seguir sin cuenta.",
   "loginPromptLoginButton": "Iniciar sesión",
   "loginPromptRegisterButton": "Crear cuenta",
-  "loginPromptGuestButton": "Continuar como invitado"
+  "loginPromptGuestButton": "Continuar como invitado",
+  "error_invalid_email": "El formato del correo electrónico no es válido."
 }

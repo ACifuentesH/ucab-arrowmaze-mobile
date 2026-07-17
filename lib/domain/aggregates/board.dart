@@ -19,7 +19,7 @@ import 'package:arrow_maze/domain/game_status.dart';
 /// Invariantes:
 ///   - Solo opera mientras _status == playing.
 ///   - Una flecha sale si todas las casillas delante de su punta están libres.
-///   - Movimiento inválido → resta vida → si vidas=0 → gameOver.
+///   - Movimiento inválido → (opcional) resta vida → si vidas=0 → gameOver.
 ///   - Sin flechas → levelCleared.
 class Board {
   final LevelId levelId;
@@ -79,8 +79,9 @@ class Board {
 
   /// Intenta sacar la flecha [arrowId] del tablero.
   ///   - Camino libre → extrae flecha, emite ArrowEscaped. Devuelve true.
-  ///   - Camino bloqueado → resta vida, emite MoveBlocked. Devuelve false.
-  bool tryRemoveArrow(String arrowId) {
+  ///   - Camino bloqueado → emite MoveBlocked. Devuelve false.
+  ///     Si [applyLifePenalty] es true, resta una vida y puede pasar a gameOver.
+  bool tryRemoveArrow(String arrowId, {bool applyLifePenalty = true}) {
     if (_status != GameStatus.playing) return false;
     final arrow = _arrows[arrowId];
     if (arrow == null) return false;
@@ -99,12 +100,14 @@ class Board {
       }
       return true;
     } else {
-      _lives = _lives.decrement();
       _pendingEvents.add(MoveBlocked(arrowId: arrowId));
 
-      if (_lives.isExhausted) {
-        _status = GameStatus.gameOver;
-        _pendingEvents.add(GameOver(levelId: levelId));
+      if (applyLifePenalty) {
+        _lives = _lives.decrement();
+        if (_lives.isExhausted) {
+          _status = GameStatus.gameOver;
+          _pendingEvents.add(GameOver(levelId: levelId));
+        }
       }
       return false;
     }

@@ -7,8 +7,15 @@ class PlayableLevel {
   final String id;
   final Difficulty difficulty;
 
-  const PlayableLevel({required this.id, required this.difficulty});
+  /// Nombre para mostrar (título de GameScreen). Null = usa el id formateado
+  /// como respaldo (niveles legacy sin nombre propio).
+  final String? name;
 
-  factory PlayableLevel.fromPreview(LevelPreview preview) =>
-      PlayableLevel(id: preview.id, difficulty: preview.difficulty);
+  const PlayableLevel({required this.id, required this.difficulty, this.name});
+
+  factory PlayableLevel.fromPreview(LevelPreview preview) => PlayableLevel(
+        id: preview.id,
+        difficulty: preview.difficulty,
+        name: preview.name,
+      );
 }

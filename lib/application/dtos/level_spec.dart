@@ -7,7 +7,6 @@ import 'package:arrow_maze/application/enums/difficulty.dart';
 /// Nuestro código nunca valida ni enumera formas; eso es responsabilidad del AI.
 class LevelSpec {
   final String shapeName;
-  final int arrowCount;
   final Difficulty difficulty;
 
   /// null = sin límite de tiempo.
@@ -19,7 +18,6 @@ class LevelSpec {
 
   const LevelSpec({
     required this.shapeName,
-    required this.arrowCount,
     required this.difficulty,
     this.timeLimitSeconds,
     this.gridSize = 14,
