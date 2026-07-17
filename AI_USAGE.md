@@ -2,7 +2,7 @@
 
 **Repository:** ucab-arrowmaze-mobile — Arrow Maze Escape Puzzle (Flutter client)
 **Course:** Desarrollo de Software NRC 25783
-**Last updated:** 2026-07-15
+**Last updated:** 2026-07-17
 
 ---
 
@@ -12,6 +12,7 @@
 |------|-------|------|
 | Claude Code (Anthropic) | Claude Fable 5 | Primary development assistant — architecture restructuring, apiClient, test suite, CI, level design, code review |
 | Claude Code (Anthropic) | Claude Sonnet 4.6 | Used in the legacy client repo (see its own AI_USAGE.md); that code was the input ported into this repo |
+| Cursor | GPT-5.6 Sol | Leaderboard cache audit, active invalidation integration and merge-conflict resolution |
 
 ---
 
@@ -321,6 +322,174 @@
 **Team modifications:** Pendiente de revisión — el dueño del proyecto validará generando un nivel real contra el backend desplegado antes de mergear.
 
 **Lessons learned:** El puerto `ILevelGeneratorService` ya existía por DIP desde el diseño original con Groq — cambiar de "LLM llamado directo desde el cliente" a "LLM llamado desde el backend" fue *solo* escribir un nuevo adapter (`ApiLevelGeneratorService`) sin tocar `GenerateLevelUseCase` ni ningún consumidor. Es el mismo beneficio arquitectónico que ya se documentó para AOP (Entry 011): la inversión de dependencias paga cuando cambia el "quién" sin que cambie el "qué".
+
+---
+
+### Entry 020 — feature/auth-ui: auditoría, protección de rutas y endurecimiento de sesión
+
+**Task:** Completar y auditar el flujo de autenticación del cliente Flutter: reemplazar la navegación imperativa por protección global con GoRouter, reaccionar a expiraciones de sesión detectadas por Dio/Riverpod, impedir que las rutas del juego se abran sin sesión, limitar el Bearer a endpoints protegidos y restaurar una sesión persistida sin mostrar Login prematuramente.
+
+**Prompts más relevantes (paraphrase):**
+- **Protección global de rutas:** "Configura GoRouter para escuchar los cambios del provider de autenticación mediante `refreshListenable` o un provider reactivo. Si el usuario no está autenticado y la ruta no es Login, redirígelo forzosamente a Login. Revisa `HomeScreen` para que JUGAR no haga un `Navigator.push` ciego."
+- **Auditoría técnica completa:** "Actúa como auditor senior y cruza estrictamente toda la base de código —Dio, interceptores, GoRouter, Riverpod, DTOs, pruebas y CI— contra los requisitos de JWT, envelope `{ success, data, message }`, errores 401/404/409/422/500, progreso, leaderboard, Testing APIs y Gitflow. Clasifica cada punto como completado, parcial o faltante, con archivos y líneas."
+- **Limpieza y seguridad del interceptor:** "Elimina los `print()` de depuración del flujo 401. Modifica `_AuthInterceptor` para que `Authorization: Bearer <token>` solo se inyecte en rutas protegidas y excluya explícitamente `/auth/login` y `/auth/register`."
+- **Restauración de sesión:** "Al arrancar, lee SecureStorage. Si existe una sesión guardada, inicializa el estado como autenticado para evitar pedir Login de nuevo, manteniendo Clean Architecture y la inyección de dependencias."
+- **Corrección de la condición de carrera:** "Añade un estado inicial `checking`, crea `/splash` con un indicador de carga y haz que GoRouter permanezca allí mientras SecureStorage resuelve la sesión. Solo después redirige a `/login` si no hay sesión o a la pantalla principal si está autenticado."
+- **Consolidación de progreso e hidratación:** "Al consolidar la lógica de progreso con Dio, evita el falso negativo de Login: una falla transitoria en `GET /progress` no debe propagarse a `AuthViewModel` ni deshacer una autenticación válida. Refactoriza las pruebas de restauración y del ViewModel al patrón Testing-API y conserva la separación por puertos de Clean Architecture."
+
+**Result obtained:**
+- `app_router.dart` pasó a centralizar las rutas `/splash`, `/login`, `/register`, Home, selección, generación y juego. El router escucha `authViewModelProvider`; bloquea rutas protegidas sin sesión y sale de Splash únicamente cuando `AuthStatus.checking` se resuelve.
+- `AuthViewModel` inicia en `checking`, restaura asíncronamente JWT + usuario mediante `RestoreSessionUseCase` y publica `authenticated`/`unauthenticated` de forma reactiva. El bridge `SessionExpiredNotifier` convierte un 401 de Dio en limpieza de sesión Riverpod y redirección global.
+- `DioApiClient` mantiene el parseo del envelope y el mapeo de errores tipados; el interceptor excluye explícitamente `/auth/login` y `/auth/register` de la inyección Bearer. También se retiró el logging temporal con `print()` usado para diagnosticar el 401.
+- Login, Register, Home, selección de nivel y Game migraron a navegación GoRouter; JUGAR queda cubierto por la misma regla global y no puede saltarse la autenticación mediante navegación imperativa.
+- La auditoría detectó deuda importante fuera del alcance inmediato: la hidratación de progreso debía absorber fallos de red sin convertirlos en fallo de credenciales, el sync remoto debía conservar `IProgressRepository` como puerto en vez de acoplar casos de uso a Dio, y las pruebas de auth debían ocultar mocks/construcción tras Testing APIs encadenables.
+- La suite se amplió con regresiones para restauración de sesión, estado `checking`, Bearer público/protegido y transición posterior a Splash; todos los tests quedaron verdes en las verificaciones realizadas durante la conversación.
+
+**Team modifications / decisions:**
+- Se mantuvo separado `AuthStatus.checking` (restauración inicial) de `AuthStatus.loading` (login, registro o logout en curso), evitando que una operación normal de formulario envíe al usuario a Splash.
+- Para restaurar también la identidad visible sin depender de claims JWT no documentados, se decidió persistir el objeto público `{ id, username, email }` junto al token. Un JWT huérfano sin usuario asociado se elimina y obliga a iniciar sesión una vez.
+- El token se trata como dato opaco: no se decodifica ni se confía en `sub`, `exp` u otros claims para reconstruir el usuario.
+
+**Lessons learned:** Un token persistido no basta para una restauración correcta si el router evalúa primero un estado `unauthenticated`; el estado inicial debe representar explícitamente "todavía no sé" y la navegación debe modelar esa tercera posibilidad. Asimismo, hidratar progreso después de autenticar es una operación secundaria: una falla de red puede impedir actualizar datos locales, pero nunca debe reinterpretar credenciales ya aceptadas como inválidas. Finalmente, poner la política Bearer en un interceptor exige distinguir rutas públicas de protegidas de forma explícita; "si existe token, adjuntarlo siempre" filtra credenciales innecesariamente a endpoints públicos.
+
+---
+
+### Entry 021 — feature/progress-sync: hidratación, escritura remota y aislamiento de sesión
+
+**Task:** Integrar el ciclo completo del progreso del jugador con `GET /progress` y `PUT /progress`, conservando la persistencia local, el modo invitado y la separación MVVM + Clean Architecture. La conversación también cubrió la restauración del menú de cuenta y la corrección de una fuga de progreso entre sesiones.
+
+**Prompts más relevantes (paraphrase):**
+- **Hidratación inicial:** "Inmediatamente después de obtener o restaurar un token válido, invoca `SyncProgressUseCase.pull()`. Un `404 NotFoundError` significa usuario nuevo y debe inicializar progreso vacío silenciosamente. Un `200` debe sobrescribir Riverpod/local con `completedLevels` y el mapa JSON `bestScores`."
+- **Menú y logout:** "Restaura el icono de usuario que despliega la información de la cuenta y el botón Cerrar Sesión. Asegúrate de que vuelva a invocar `AuthViewModel.logout()`."
+- **Escritura remota:** "Inmediatamente después de guardar localmente un nivel completado, dispara `SyncProgressUseCase.push()` de forma asíncrona. El PUT debe incluir `lastLevelId`, `lastScore`, `lastMoves` y `lastTimeSeconds`; red/500 no deben provocar crash porque el progreso local ya está guardado."
+- **Corrección de puntajes:** "`bestScores` es un objeto JSON `{ [levelId]: score }`, no un array. La hidratación debe iterarlo correctamente, guardar los puntajes reales, calcular las estrellas sin fijarlas a 1 y actualizar el récord cuando el nuevo score supera al anterior nulo o mal parseado. El PUT debe enviar el mapa completo de puntajes reales."
+- **Aislamiento de sesión:** "Después de borrar el token en logout, llama a `PlayerProgressRepository.clear()` y luego invalida `levelSelectViewModelProvider` para que la UI vuelva inmediatamente al Nivel 1. El modo invitado puede guardar localmente, pero login sobrescribe ese estado y logout lo borra."
+- **Ajuste visual de acceso:** "En el botón Login el texto desaparece; mantenlo siempre legible, hazlo coherente con el tema y elimina el icono que parece de logout."
+
+**Result obtained:**
+- `AuthViewModel` orquesta restauración/login/register y ejecuta la hidratación tras una sesión válida; `SyncProgressUseCase.pull()` absorbe el `404` como progreso inexistente y `HydrateProgressUseCase` reemplaza o limpia el repositorio local.
+- Se agregó un mapper dedicado para convertir `PlayerProgressDto.bestScores` desde un mapa JSON tolerante (`num`/string a `int`) a `LevelProgress`; las estrellas se derivan del score y del catálogo cuando está disponible, en vez de usar `starsEarned: 1`.
+- `CompleteLevelUseCase` compara el nuevo score contra un best previo null-safe y persiste también mejoras de estrellas. `PushProgressUseCase` reconstruye el mapa completo `{ levelId: bestScore }` y envía los cuatro campos `last*` requeridos por leaderboard.
+- `GameViewModel` dispara el PUT en modo fire-and-forget después de completar la persistencia local. Los errores tipados de API y fallos inesperados de transporte se absorben en la operación de sync para no interrumpir la victoria.
+- `LogoutUseCase` elimina token, usuario persistido y progreso local. Un puerto `ISessionCleanup` mantiene el caso de uso desacoplado de Riverpod; su adapter invalida los ViewModels de selección y juego para eliminar inmediatamente el estado del usuario anterior.
+- `HomeScreen` volvió a mostrar el menú de cuenta autenticada y su botón Cerrar Sesión delega en `AuthViewModel.logout()`. El botón Login fue simplificado sin icono y con colores explícitos del tema para mantener el texto visible.
+- Se agregaron y actualizaron pruebas para hidratación 200/404, parseo del mapa `bestScores`, mejora de récord/estrellas, payload completo del PUT, absorción de fallos remotos, restauración de sesión y limpieza de progreso/UI durante logout.
+
+**Team modifications / decisions:**
+- Se decidió conservar el progreso local para invitados; no se limpia al iniciar la app sin sesión. Solo se reemplaza al autenticar/hidratar y se elimina al cerrar una sesión autenticada.
+- La sincronización remota de una victoria es deliberadamente no bloqueante: la persistencia local es la operación crítica para la partida y la red es secundaria.
+- Como el backend no devuelve estrellas, estas se reconstruyen en aplicación usando score + metadatos del catálogo, sin alterar el contrato de `GET /progress`.
+
+**Lessons learned:** El progreso local no puede tratarse como un singleton neutral cuando distintos usuarios comparten el mismo dispositivo: debe tener límites explícitos de sesión o limpiarse en cada transición. Además, modelar `bestScores` como mapa tipado desde la frontera HTTP evita dos errores encadenados — estrellas artificiales y récords que nunca mejoran— y permite que el mismo estado local sea la fuente del payload completo del PUT. Finalmente, una operación secundaria de red debe ejecutarse después de la escritura local y absorber sus errores para que la experiencia de juego no dependa de la disponibilidad del backend.
+
+---
+
+### Entry 022 — feature/leaderboard-ui: ViewModel Riverpod, pantalla de clasificación y pruebas
+
+**Task:** Completar la presentación del leaderboard por nivel: convertir el ViewModel existente (que solo era un stub) en un flujo funcional con Riverpod, crear la pantalla de clasificación, enlazarla desde cada nivel disponible y cubrir ViewModel/UI con la arquitectura de pruebas de 3 niveles.
+
+**Prompts más relevantes (paraphrase):**
+- **Diagnóstico inicial:** "Analiza `leaderboard_view_model.dart` y determina si ya usa `StateNotifier`, `AsyncNotifier` o `Notifier` para consumir el caso de uso. Confirma si maneja loading, error, éxito y vacío, y muestra el código actual."
+- **Implementación del ViewModel:** "Añade `copyWith` a `LeaderboardState`, incluyendo `clearError`. Implementa `load(levelId, {limit = 10})`: activa loading y limpia errores, ejecuta `GetLeaderboardUseCase`, publica entries al tener éxito y el mensaje de excepción al fallar. Registra un `StateNotifierProvider.autoDispose` que inyecte el caso de uso con `ref.watch`."
+- **Pantalla de clasificación:** "Crea `LeaderboardScreen` como `ConsumerStatefulWidget`, recibe `levelId`, dispara la carga inicial y observa el provider. Renderiza indicador de carga, error con reintento, estado vacío y una lista de tarjetas con posición, usuario, puntos, movimientos, tiempo y fecha; destaca al primer puesto con tonos cálidos."
+- **Acceso por nivel:** "En `LevelSelectScreen`, agrega un botón de trofeo a cada nivel que navegue con `Navigator.push` hacia `LeaderboardScreen(levelId: entry.preview.id)`. No muestres o deshabilita el botón si el nivel está bloqueado."
+- **Pruebas de presentación:** "Crea pruebas del ViewModel y widget tests de la pantalla siguiendo la arquitectura de 3 niveles. Verifica loading, error y éxito; usa `LeaderboardEntryMother` y encapsula fakes/orquestación en Testing APIs."
+
+**Result obtained:**
+- `LeaderboardState` incorporó `copyWith` inmutable con limpieza explícita de errores; `LeaderboardViewModel.load()` quedó conectado a `GetLeaderboardUseCase` y publica correctamente loading, datos, vacío o error.
+- `providers.dart` incorporó `leaderboardViewModelProvider` como `StateNotifierProvider.autoDispose<LeaderboardViewModel, LeaderboardState>`, observando `getLeaderboardUseCaseProvider`.
+- Se creó `leaderboard_screen.dart` con las cuatro ramas visuales solicitadas y tarjetas de ranking coherentes con `ThemeConfig.dark`; la fecha se presenta como `dd/MM/yyyy` sin añadir una dependencia.
+- `LevelSelectScreen` obtuvo accesos de trofeo tanto para campaña como para niveles generados, usando `entry.preview.id`; los niveles bloqueados no muestran el acceso.
+- Se añadieron `leaderboard_view_model_test.dart`, `leaderboard_screen_test.dart`, `LeaderboardScreenTestApi` y `FakeGetLeaderboardUseCase`, y se extendió `LeaderboardTestApi` reutilizando `LeaderboardEntryMother`.
+- La verificación conjunta de los tests del caso de uso, ViewModel y pantalla terminó con **9/9 pruebas verdes**.
+
+**Team modifications / decisions:**
+- Se reutilizó `StateNotifier`, ya presente en el stub y consistente con el resto del proyecto, en vez de migrar aisladamente esta feature a `Notifier`/`AsyncNotifier`.
+- El estado vacío se mantuvo como estado derivado (`!isLoading && errorMessage == null && entries.isEmpty`) para evitar una enum o clase adicional sin necesidad.
+- En niveles bloqueados se eligió ocultar el botón de clasificación en vez de mostrarlo deshabilitado.
+
+**Lessons learned:** Ejecutar `load()` directamente en `initState` provocó en widget tests el error de Riverpod "Tried to modify a provider while the widget tree was building"; diferirlo con `Future.microtask`, siguiendo el patrón ya usado por `LevelSelectScreen`, eliminó la modificación durante el montaje. También se evitó `pumpAndSettle()` mientras había un `CircularProgressIndicator`, porque su animación no termina y hacía expirar el test; pumps controlados permitieron observar cada transición de estado de forma determinista.
+
+---
+
+### Entry 023 — feature/survival-mode: reglas de error, niveles aleatorios, auth híbrida y UX
+
+**Task:** Auditar y refinar el Modo Supervivencia para que mantenga una partida global de 120 segundos, reinicie el tablero actual ante errores sin usar vidas, evite repetir consecutivamente el mismo nivel, permita jugar como invitado sin provocar errores 401 y ofrezca una salida confirmada desde la partida.
+
+**Prompts más relevantes (paraphrase):**
+- **Auditoría del ciclo de niveles:** "Analiza `survival_view_model.dart` y `GameViewModel`. Determina estrictamente qué ocurre si el jugador resuelve todos los tableros disponibles antes de que terminen los 120 segundos: error por nivel inexistente, reinicio desde el primero, fin anticipado o reutilización del catálogo."
+- **Regla de error en supervivencia:** "Modifica el flujo `GameViewModel → RemoveArrowUseCase → Command → Board.tryRemoveArrow` para que un movimiento inválido en `GamePlayMode.survival` no descuente vidas ni provoque `gameOver`; debe reiniciar inmediatamente el tablero actual mientras el cronómetro global continúa. Oculta los corazones en el HUD y conserva intacta la campaña."
+- **Selección aleatoria sin repetición inmediata:** "En `_loadRandomLevel()`, conserva el último id seleccionado y garantiza que el siguiente nivel aleatorio no sea el mismo, contemplando correctamente el catálogo de un solo nivel."
+- **Autenticación híbrida y degradación elegante:** "Antes de entrar a Supervivencia desde Home, reutiliza `authViewModelProvider`, `showLoginPromptSheet` y `LoginPromptChoice`: autenticados entran directamente; invitados pueden iniciar sesión, registrarse o continuar como invitados. Al expirar el tiempo, omite `SubmitSurvivalRunUseCase` si no hay autenticación y termina en `SurvivalPhase.success` para evitar un 401."
+- **Pulido de UX:** "Añade un botón de regreso en la barra superior con confirmación de abandono; al confirmar, invalida `survivalViewModelProvider` y vuelve al menú. En el overlay exitoso de un invitado, informa de forma sutil que el puntaje no fue guardado y que debe iniciar sesión para aparecer en el ranking."
+
+**Result obtained:**
+- La auditoría confirmó que Supervivencia no consume una cola secuencial: reutiliza aleatoriamente el catálogo durante todo el cronómetro y solo envía el resultado al expirar el tiempo. `_lastLevelId` y una selección con reintento impiden repeticiones consecutivas; si existe un solo nivel, se reutiliza sin entrar en un bucle infinito.
+- `Board.tryRemoveArrow` recibió la política `applyLifePenalty` (true por defecto), propagada por `RemoveArrowCommand`, `IRemoveArrowUseCase`, `RemoveArrowUseCase` y `UseCaseLoggerProxy`. Campaña conserva la penalización; Supervivencia usa `false`, mantiene vidas/status y `GameViewModel.tapArrow()` reinicia el nivel actual mediante `RestartLevelUseCase`.
+- `HudView` oculta los corazones cuando el modo es `GamePlayMode.survival`, mientras la campaña mantiene el HUD original. `SurvivalViewModel` avanza únicamente al observar `levelCleared`, no ante `gameOver`.
+- `HomeScreen` incorporó `_onSurvivalPressed()`, que reutiliza el bottom sheet `showLoginPromptSheet`: `guest` abre la partida, `login`/`register` abren sus pantallas y solo continúan si la autenticación termina correctamente, y `null` cancela la acción.
+- La consulta de autenticación se inyectó en `SurvivalViewModel` como `bool Function()`, conectada en `providers.dart` a `authViewModelProvider`, evitando acoplar el ViewModel directamente a Riverpod. Invitados omiten por completo el submit remoto y llegan al overlay exitoso con el aviso "Puntaje no guardado. Inicia sesión para entrar al ranking."
+- `SurvivalGameScreen` añadió un `Icons.arrow_back` en `_TopBar`; muestra confirmación antes de abandonar y, al aceptar, invalida el provider y vuelve al Home.
+- Se añadió una regresión de dominio para comprobar que un movimiento bloqueado con la penalización desactivada no reduce vidas ni produce `gameOver`. Las suites relacionadas y posteriormente la suite completa finalizaron en verde; los archivos modificados quedaron sin errores de lint.
+
+**Team modifications / decisions:**
+- Se eligió una política explícita (`applyLifePenalty`) en vez de introducir `GamePlayMode` dentro del dominio. El dominio conoce si debe aplicar la penalización, pero no depende de una enum de presentación.
+- El reinicio se orquesta desde `GameViewModel`, porque cargar nuevamente el estado inicial pertenece a aplicación/presentación y ya existe `RestartLevelUseCase`; `Board` solo rechaza el movimiento y emite `MoveBlocked`.
+- El modo invitado sigue siendo jugable y muestra un resultado local, pero no intenta escribir en un endpoint protegido ni simula que el puntaje entró al ranking.
+- La comprobación de sesión se inyecta como función para consultar el estado vigente al finalizar los 120 segundos, no como un booleano capturado al crear el ViewModel.
+
+**Lessons learned:** Una regla específica de modo no debe filtrarse como una dependencia de presentación dentro del agregado si puede expresarse como una política de dominio pequeña y con valor por defecto seguro. También, la degradación elegante requiere actuar en dos fronteras: permitir la entrada del invitado desde la UI y evitar la operación remota protegida al final; resolver solo una deja un flujo que parece funcionar hasta terminar la partida. Finalmente, cualquier selección aleatoria que prohíba repetición necesita tratar explícitamente el conjunto de tamaño uno para no crear un `do-while` infinito.
+
+---
+
+### Entry 024 — fix/leaderboard-cache-refresh: invalidación activa tras guardar puntajes
+
+**Task:** Auditar si los rankings estándar y de Supervivencia consultaban datos frescos al abrirse y corregir los casos en los que una lectura posterior a guardar un puntaje podía reutilizar estado o caché anterior.
+
+**Prompts más relevantes (paraphrase):**
+- **Auditoría de frescura:** "Revisa el Provider que alimenta `SurvivalLeaderboardScreen` y el ranking de niveles estándar, además de las pantallas consumidoras. Determina si existe `ref.invalidate()` o un mecanismo equivalente que obligue una nueva llamada HTTP al entrar, y señala dónde debería inyectarse arquitectónicamente."
+- **Alcance del ranking estándar:** "Confirma si el modo normal tiene un leaderboard global o uno independiente por nivel."
+- **Invalidación activa:** "Para Supervivencia, invalida `survivalLeaderboardProvider` inmediatamente después de que `SubmitSurvivalRunUseCase` termine con éxito. Para niveles estándar, añade invalidación a `CachingUseCaseProxy` y limpia la entrada correspondiente después de una escritura remota exitosa."
+- **Integración de ramas:** "Resuelve el conflicto en `lib/config/providers.dart` combinando sin pérdidas la lógica de `CachingUseCaseProxy` y sus callbacks con todos los repositorios, casos de uso y providers del Modo Supervivencia."
+- **Desacoplamiento Riverpod:** "Con todo el código integrado, fuerza la recarga del ranking de Supervivencia después del submit exitoso sin romper la separación del ViewModel."
+
+**Result obtained:**
+- La auditoría distinguió dos comportamientos: `survivalLeaderboardProvider` era `FutureProvider.autoDispose` y solo se invalidaba manualmente al reintentar un error; el ranking estándar llamaba `load()` al entrar, pero `CachingUseCaseProxy` podía devolver durante 30 segundos el valor anterior sin ejecutar HTTP.
+- Se confirmó que el modo normal usa un ranking por nivel (`GET /leaderboard/:levelId`) y que la caché separa las entradas por `(levelId, limit)`.
+- `CachingUseCaseProxy` incorporó `invalidate({String? levelId})`, capaz de limpiar un nivel concreto o toda la caché. `PushProgressUseCase` informa si la escritura realmente llegó al servidor y `ProgressSyncCoordinator` invalida únicamente el nivel actualizado después del éxito; errores absorbidos o sesiones invitadas no producen una invalidación falsa.
+- El conflicto de `providers.dart` se resolvió conservando simultáneamente el provider tipado como `CachingUseCaseProxy`, el callback `onLeaderboardUpdated`, y todos los providers de repositorio, submit, consulta y ViewModel de Supervivencia.
+- `SurvivalViewModel` ejecuta un callback `_onLeaderboardUpdated()` justo después del submit exitoso. La implementación Riverpod se inyecta desde `providers.dart` y ejecuta `ref.invalidate(survivalLeaderboardProvider)`, evitando introducir `Ref` en el ViewModel. El provider del ranking se expone desde su archivo original para mantener compatibles los imports de la pantalla.
+- Se añadió una prueba de regresión que demuestra que una lectura posterior a `invalidate(levelId:)` vuelve a invocar el caso de uso envuelto aunque el TTL siga vigente. Las pruebas focalizadas de caché y progreso finalizaron en verde y el análisis no encontró errores nuevos.
+
+**Team modifications / decisions:**
+- La invalidación estándar ocurre después del write remoto confirmado, no simplemente al terminar el nivel localmente; así no se descarta caché cuando el usuario es invitado o la red falla.
+- Se limpia solo el ranking del nivel afectado para conservar el beneficio del TTL en los demás niveles.
+- Aunque el pedido inicial proponía usar `ref.invalidate(...)` dentro de `SurvivalViewModel`, se mantuvo el ViewModel desacoplado de Riverpod mediante un callback inyectado, consistente con la estrategia ya usada para consultar autenticación.
+
+**Lessons learned:** Llamar nuevamente a un ViewModel no garantiza una consulta HTTP si por debajo existe un proxy con TTL; la invalidación debe alcanzar la capa que realmente conserva el dato. Además, una escritura que absorbe errores necesita comunicar explícitamente si tuvo éxito antes de disparar efectos derivados. En presentación, inyectar callbacks pequeños permite conservar la invalidación de Riverpod en la composición de dependencias sin convertir los ViewModels en service locators ni crear ciclos de imports.
+
+---
+
+### Entry 025 — feature/survival-mode: cambio de nombre visible a Contra Reloj y acceso al ranking global
+
+**Task:** Actualizar la nomenclatura visible del Modo Supervivencia a Modo Contra Reloj y añadir, dentro de la partida, un acceso directo al ranking global propio de este modo, sin alterar los nombres internos existentes ni requerir un `levelId`.
+
+**Prompts más relevantes (paraphrase):**
+- **Cambio de nombre en UI/i18n:** "Busca en pantallas, menús y archivos de internacionalización todas las apariciones visibles de 'Supervivencia'/'Survival' y cambia el nombre del modo a 'Contra reloj' en español y 'Time Trial' en inglés."
+- **Acceso al ranking desde la partida:** "Modifica directamente el archivo de la pantalla de juego existente; no renombres clases, archivos ni variables. Inserta un botón con `Icons.emoji_events` y navega al leaderboard general de este modo, sin pasar el `levelId` de un nivel."
+- **Título del ranking:** "Cambia el título visible de 'Ranking Contra reloj' a 'Clasificación Contra Reloj'."
+
+**Result obtained:**
+- Las traducciones del botón de Home, el título del leaderboard y el mensaje de error pasaron a usar la nomenclatura Contra Reloj / Time Trial, conservando las claves internas `survival*` para evitar un refactor estructural innecesario.
+- `SurvivalGameScreen` incorporó un botón de trofeo en `_TopBar`, con colores de `ThemeConfig.dark` y tooltip localizado. El botón abre `SurvivalLeaderboardScreen`, que consume el ranking global del modo mediante `survivalLeaderboardProvider`; no se envía ningún `levelId`.
+- La navegación usa `Navigator.push` en vez de reemplazar la ruta, por lo que la pantalla de juego y su `SurvivalViewModel` permanecen en la pila mientras se consulta la clasificación.
+- El título español quedó como **"Clasificación Contra Reloj"**. El análisis focalizado de `survival_game_screen.dart` finalizó sin errores.
+
+**Team modifications / decisions:**
+- Se descartó el refactor completo de símbolos `survival` → `timeTrial` y se adoptó explícitamente un cambio solo de presentación. Los nombres de archivos, clases, providers, métodos y rutas HTTP `/survival` permanecen intactos.
+- El acceso añadido apunta al ranking global de partidas Contra Reloj (`SurvivalLeaderboardScreen`), no al `LeaderboardScreen` estándar por nivel.
+
+**Lessons learned:** Un cambio de nombre de producto no exige necesariamente renombrar el contrato técnico completo. Mantener los identificadores internos y las rutas del backend estables redujo el riesgo, mientras i18n resolvió el cambio visible. También fue importante distinguir los dos rankings del proyecto: `LeaderboardScreen` requiere un `levelId`, pero el modo Contra Reloj ya dispone de una pantalla y un provider globales, que son el destino correcto para el botón dentro de la partida.
 
 ---
 
