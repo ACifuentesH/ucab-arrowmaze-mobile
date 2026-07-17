@@ -380,6 +380,174 @@ abstract class AppLocalizations {
   /// **'Continue as guest'**
   String get loginPromptGuestButton;
 
+  /// Title of the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Log in'**
+  String get loginTitle;
+
+  /// Subtitle of the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your credentials to continue'**
+  String get loginSubtitle;
+
+  /// Label for an email field
+  ///
+  /// In en, this message translates to:
+  /// **'Email'**
+  String get emailLabel;
+
+  /// Example shown in an email field
+  ///
+  /// In en, this message translates to:
+  /// **'you@email.com'**
+  String get emailHint;
+
+  /// Label for a password field
+  ///
+  /// In en, this message translates to:
+  /// **'Password'**
+  String get passwordLabel;
+
+  /// Validation shown when an email field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your email'**
+  String get emailRequired;
+
+  /// Validation shown when an email address is malformed
+  ///
+  /// In en, this message translates to:
+  /// **'Invalid email address'**
+  String get emailInvalid;
+
+  /// Validation shown when a password field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your password'**
+  String get passwordRequired;
+
+  /// Submit button on the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'LOG IN'**
+  String get loginSubmitButton;
+
+  /// Link from the login screen to the registration screen
+  ///
+  /// In en, this message translates to:
+  /// **'Don\'t have an account? Sign up'**
+  String get loginRegisterLink;
+
+  /// Title of the registration screen
+  ///
+  /// In en, this message translates to:
+  /// **'Create account'**
+  String get registerTitle;
+
+  /// Subtitle of the registration screen
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your details to sign up'**
+  String get registerSubtitle;
+
+  /// Label for a username field
+  ///
+  /// In en, this message translates to:
+  /// **'Username'**
+  String get usernameLabel;
+
+  /// Example shown in a username field
+  ///
+  /// In en, this message translates to:
+  /// **'your_username'**
+  String get usernameHint;
+
+  /// Validation shown when a username field is empty
+  ///
+  /// In en, this message translates to:
+  /// **'Enter a username'**
+  String get usernameRequired;
+
+  /// Validation shown when a username has an invalid length
+  ///
+  /// In en, this message translates to:
+  /// **'Username must be between 3 and 30 characters'**
+  String get usernameLengthValidation;
+
+  /// Validation shown when a registration password is too short
+  ///
+  /// In en, this message translates to:
+  /// **'Password must be at least 6 characters'**
+  String get passwordMinLengthValidation;
+
+  /// Submit button on the registration screen
+  ///
+  /// In en, this message translates to:
+  /// **'SIGN UP'**
+  String get registerSubmitButton;
+
+  /// Link from the registration screen back to the login screen
+  ///
+  /// In en, this message translates to:
+  /// **'Already have an account? Log in'**
+  String get registerLoginLink;
+
+  /// Title of the confirmation dialog shown when leaving a time trial game
+  ///
+  /// In en, this message translates to:
+  /// **'Quit game?'**
+  String get survivalExitTitle;
+
+  /// Warning in the confirmation dialog shown when leaving a time trial game
+  ///
+  /// In en, this message translates to:
+  /// **'You will lose your progress'**
+  String get survivalExitMessage;
+
+  /// Generic cancel button
+  ///
+  /// In en, this message translates to:
+  /// **'Cancel'**
+  String get cancelButton;
+
+  /// Confirmation button that leaves a time trial game
+  ///
+  /// In en, this message translates to:
+  /// **'Quit'**
+  String get survivalExitButton;
+
+  /// Tooltip for the button that leaves a time trial game
+  ///
+  /// In en, this message translates to:
+  /// **'Quit game'**
+  String get survivalExitTooltip;
+
+  /// Title shown after a time trial score is saved
+  ///
+  /// In en, this message translates to:
+  /// **'Score saved!'**
+  String get survivalScoreSaved;
+
+  /// Title shown when a time trial run ends
+  ///
+  /// In en, this message translates to:
+  /// **'Time\'s up!'**
+  String get survivalTimeUp;
+
+  /// Number of boards solved in the time trial result overlay
+  ///
+  /// In en, this message translates to:
+  /// **'Boards solved: {count}'**
+  String survivalResultBoardsSolved(int count);
+
+  /// Notice shown to guests after completing a time trial run
+  ///
+  /// In en, this message translates to:
+  /// **'Score not saved. Log in to join the ranking.'**
+  String get survivalScoreNotSaved;
+
   /// Banner message when the API rejects the email format (validation code invalid_email)
   ///
   /// In en, this message translates to:

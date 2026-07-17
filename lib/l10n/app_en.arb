@@ -212,6 +212,123 @@
   "@loginPromptGuestButton": {
     "description": "Button in the login prompt sheet that dismisses it and proceeds without logging in"
   },
+  "loginTitle": "Log in",
+  "@loginTitle": {
+    "description": "Title of the login screen"
+  },
+  "loginSubtitle": "Enter your credentials to continue",
+  "@loginSubtitle": {
+    "description": "Subtitle of the login screen"
+  },
+  "emailLabel": "Email",
+  "@emailLabel": {
+    "description": "Label for an email field"
+  },
+  "emailHint": "you@email.com",
+  "@emailHint": {
+    "description": "Example shown in an email field"
+  },
+  "passwordLabel": "Password",
+  "@passwordLabel": {
+    "description": "Label for a password field"
+  },
+  "emailRequired": "Enter your email",
+  "@emailRequired": {
+    "description": "Validation shown when an email field is empty"
+  },
+  "emailInvalid": "Invalid email address",
+  "@emailInvalid": {
+    "description": "Validation shown when an email address is malformed"
+  },
+  "passwordRequired": "Enter your password",
+  "@passwordRequired": {
+    "description": "Validation shown when a password field is empty"
+  },
+  "loginSubmitButton": "LOG IN",
+  "@loginSubmitButton": {
+    "description": "Submit button on the login screen"
+  },
+  "loginRegisterLink": "Don't have an account? Sign up",
+  "@loginRegisterLink": {
+    "description": "Link from the login screen to the registration screen"
+  },
+  "registerTitle": "Create account",
+  "@registerTitle": {
+    "description": "Title of the registration screen"
+  },
+  "registerSubtitle": "Enter your details to sign up",
+  "@registerSubtitle": {
+    "description": "Subtitle of the registration screen"
+  },
+  "usernameLabel": "Username",
+  "@usernameLabel": {
+    "description": "Label for a username field"
+  },
+  "usernameHint": "your_username",
+  "@usernameHint": {
+    "description": "Example shown in a username field"
+  },
+  "usernameRequired": "Enter a username",
+  "@usernameRequired": {
+    "description": "Validation shown when a username field is empty"
+  },
+  "usernameLengthValidation": "Username must be between 3 and 30 characters",
+  "@usernameLengthValidation": {
+    "description": "Validation shown when a username has an invalid length"
+  },
+  "passwordMinLengthValidation": "Password must be at least 6 characters",
+  "@passwordMinLengthValidation": {
+    "description": "Validation shown when a registration password is too short"
+  },
+  "registerSubmitButton": "SIGN UP",
+  "@registerSubmitButton": {
+    "description": "Submit button on the registration screen"
+  },
+  "registerLoginLink": "Already have an account? Log in",
+  "@registerLoginLink": {
+    "description": "Link from the registration screen back to the login screen"
+  },
+  "survivalExitTitle": "Quit game?",
+  "@survivalExitTitle": {
+    "description": "Title of the confirmation dialog shown when leaving a time trial game"
+  },
+  "survivalExitMessage": "You will lose your progress",
+  "@survivalExitMessage": {
+    "description": "Warning in the confirmation dialog shown when leaving a time trial game"
+  },
+  "cancelButton": "Cancel",
+  "@cancelButton": {
+    "description": "Generic cancel button"
+  },
+  "survivalExitButton": "Quit",
+  "@survivalExitButton": {
+    "description": "Confirmation button that leaves a time trial game"
+  },
+  "survivalExitTooltip": "Quit game",
+  "@survivalExitTooltip": {
+    "description": "Tooltip for the button that leaves a time trial game"
+  },
+  "survivalScoreSaved": "Score saved!",
+  "@survivalScoreSaved": {
+    "description": "Title shown after a time trial score is saved"
+  },
+  "survivalTimeUp": "Time's up!",
+  "@survivalTimeUp": {
+    "description": "Title shown when a time trial run ends"
+  },
+  "survivalResultBoardsSolved": "Boards solved: {count}",
+  "@survivalResultBoardsSolved": {
+    "description": "Number of boards solved in the time trial result overlay",
+    "placeholders": {
+      "count": {
+        "type": "int"
+      }
+    }
+  },
+  "survivalScoreNotSaved": "Score not saved. Log in to join the ranking.",
+  "@survivalScoreNotSaved": {
+    "description": "Notice shown to guests after completing a time trial run"
+  },
   "error_invalid_email": "The email address format is invalid.",
   "@error_invalid_email": {
     "description": "Banner message when the API rejects the email format (validation code invalid_email)"

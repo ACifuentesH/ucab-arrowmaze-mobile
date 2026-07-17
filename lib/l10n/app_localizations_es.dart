@@ -166,6 +166,95 @@ class AppLocalizationsEs extends AppLocalizations {
   String get loginPromptGuestButton => 'Continuar como invitado';
 
   @override
+  String get loginTitle => 'Iniciar sesión';
+
+  @override
+  String get loginSubtitle => 'Ingresa tus credenciales para continuar';
+
+  @override
+  String get emailLabel => 'Correo electrónico';
+
+  @override
+  String get emailHint => 'tu@email.com';
+
+  @override
+  String get passwordLabel => 'Contraseña';
+
+  @override
+  String get emailRequired => 'Ingresa tu correo';
+
+  @override
+  String get emailInvalid => 'Correo electrónico inválido';
+
+  @override
+  String get passwordRequired => 'Ingresa tu contraseña';
+
+  @override
+  String get loginSubmitButton => 'ENTRAR';
+
+  @override
+  String get loginRegisterLink => '¿No tienes cuenta? Regístrate';
+
+  @override
+  String get registerTitle => 'Crear cuenta';
+
+  @override
+  String get registerSubtitle => 'Completa tus datos para registrarte';
+
+  @override
+  String get usernameLabel => 'Usuario';
+
+  @override
+  String get usernameHint => 'tu_usuario';
+
+  @override
+  String get usernameRequired => 'Ingresa un usuario';
+
+  @override
+  String get usernameLengthValidation =>
+      'El usuario debe tener entre 3 y 30 caracteres';
+
+  @override
+  String get passwordMinLengthValidation =>
+      'La contraseña debe tener al menos 6 caracteres';
+
+  @override
+  String get registerSubmitButton => 'REGISTRARSE';
+
+  @override
+  String get registerLoginLink => '¿Ya tienes cuenta? Inicia sesión';
+
+  @override
+  String get survivalExitTitle => '¿Abandonar partida?';
+
+  @override
+  String get survivalExitMessage => 'Perderás tu progreso';
+
+  @override
+  String get cancelButton => 'Cancelar';
+
+  @override
+  String get survivalExitButton => 'Abandonar';
+
+  @override
+  String get survivalExitTooltip => 'Abandonar partida';
+
+  @override
+  String get survivalScoreSaved => '¡Registro guardado!';
+
+  @override
+  String get survivalTimeUp => '¡Tiempo agotado!';
+
+  @override
+  String survivalResultBoardsSolved(int count) {
+    return 'Tableros resueltos: $count';
+  }
+
+  @override
+  String get survivalScoreNotSaved =>
+      'Puntaje no guardado. Inicia sesión para entrar al ranking.';
+
+  @override
   String get error_invalid_email =>
       'El formato del correo electrónico no es válido.';
 }

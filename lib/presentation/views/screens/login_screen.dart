@@ -65,16 +65,15 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(authViewModelProvider.notifier).login(
-          _emailController.text,
-          _passwordController.text,
-          l10n: l10n,
-        );
+    await ref
+        .read(authViewModelProvider.notifier)
+        .login(_emailController.text, _passwordController.text, l10n: l10n);
   }
 
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authViewModelProvider);
+    final l = AppLocalizations.of(context)!;
 
     ref.listen(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated && context.mounted) {
@@ -88,7 +87,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: _t.hudText,
-        title: const Text('Iniciar sesión'),
+        title: Text(l.loginTitle),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -123,7 +122,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               ),
                               const SizedBox(height: 12),
                               Text(
-                                'Ingresa tus credenciales para continuar',
+                                l.loginSubtitle,
                                 textAlign: TextAlign.center,
                                 style: TextStyle(
                                   fontSize: 14,
@@ -131,7 +130,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 ),
                               ),
                               const SizedBox(height: 40),
-                              const _SectionLabel('Correo electrónico'),
+                              _SectionLabel(l.emailLabel),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _emailController,
@@ -146,17 +145,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   }
                                 },
                                 decoration: _inputDecoration(
-                                  hintText: 'tu@email.com',
+                                  hintText: l.emailHint,
                                   showHint: !_emailFocused,
                                   prefixIcon: Icons.mail_outline,
                                 ),
                                 validator: (value) {
                                   final trimmed = value?.trim() ?? '';
                                   if (trimmed.isEmpty) {
-                                    return 'Ingresa tu correo';
+                                    return l.emailRequired;
                                   }
                                   if (!trimmed.contains('@')) {
-                                    return 'Correo electrónico inválido';
+                                    return l.emailInvalid;
                                   }
                                   return null;
                                 },
@@ -165,7 +164,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     .clearError(),
                               ),
                               const SizedBox(height: 20),
-                              const _SectionLabel('Contraseña'),
+                              _SectionLabel(l.passwordLabel),
                               const SizedBox(height: 8),
                               TextFormField(
                                 controller: _passwordController,
@@ -191,14 +190,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     onPressed: auth.isLoading
                                         ? null
                                         : () => setState(
-                                              () => _obscurePassword =
-                                                  !_obscurePassword,
-                                            ),
+                                            () => _obscurePassword =
+                                                !_obscurePassword,
+                                          ),
                                   ),
                                 ),
                                 validator: (value) {
                                   if (value == null || value.isEmpty) {
-                                    return 'Ingresa tu contraseña';
+                                    return l.passwordRequired;
                                   }
                                   return null;
                                 },
@@ -229,19 +228,17 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                     style: FilledButton.styleFrom(
                                       backgroundColor: _t.primary,
                                       foregroundColor: _t.onPrimary,
-                                      disabledBackgroundColor:
-                                          _t.primary.withValues(alpha: 0.5),
+                                      disabledBackgroundColor: _t.primary
+                                          .withValues(alpha: 0.5),
                                       textStyle: const TextStyle(
                                         fontSize: 16,
                                         fontWeight: FontWeight.bold,
                                       ),
                                       shape: RoundedRectangleBorder(
-                                        borderRadius:
-                                            BorderRadius.circular(14),
+                                        borderRadius: BorderRadius.circular(14),
                                       ),
                                     ),
-                                    onPressed:
-                                        auth.isLoading ? null : _submit,
+                                    onPressed: auth.isLoading ? null : _submit,
                                     child: auth.isLoading
                                         ? const SizedBox(
                                             width: 22,
@@ -251,7 +248,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                               color: Colors.white,
                                             ),
                                           )
-                                        : const Text('ENTRAR'),
+                                        : Text(l.loginSubmitButton),
                                   ),
                                 ),
                                 const SizedBox(height: 16),
@@ -259,17 +256,16 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   onPressed: auth.isLoading
                                       ? null
                                       : () => Navigator.push(
-                                            context,
-                                            MaterialPageRoute(
-                                              builder: (_) =>
-                                                  const RegisterScreen(),
-                                            ),
+                                          context,
+                                          MaterialPageRoute(
+                                            builder: (_) =>
+                                                const RegisterScreen(),
                                           ),
+                                        ),
                                   child: Text(
-                                    '¿No tienes cuenta? Regístrate',
+                                    l.loginRegisterLink,
                                     style: TextStyle(
-                                      color:
-                                          _t.primary.withValues(alpha: 0.9),
+                                      color: _t.primary.withValues(alpha: 0.9),
                                       fontSize: 14,
                                     ),
                                   ),
@@ -309,9 +305,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: _t.hudText.withValues(alpha: 0.1),
-        ),
+        borderSide: BorderSide(color: _t.hudText.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -335,9 +329,9 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: ThemeConfig.dark.hudText,
-          ),
+        fontWeight: FontWeight.w600,
+        color: ThemeConfig.dark.hudText,
+      ),
     );
   }
 }
