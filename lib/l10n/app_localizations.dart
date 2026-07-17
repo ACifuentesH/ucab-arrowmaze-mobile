@@ -122,16 +122,16 @@ abstract class AppLocalizations {
   /// **'CREATIVE'**
   String get creativeButton;
 
-  /// Home button that starts a timed survival run
+  /// Home button that starts a time trial run
   ///
   /// In en, this message translates to:
-  /// **'SURVIVAL MODE'**
+  /// **'TIME TRIAL MODE'**
   String get survivalModeButton;
 
-  /// Title of the survival mode leaderboard screen
+  /// Title of the time trial mode leaderboard screen
   ///
   /// In en, this message translates to:
-  /// **'Survival Leaderboard'**
+  /// **'Time Trial Leaderboard'**
   String get survivalLeaderboardTitle;
 
   /// Empty state when survival leaderboard has no entries
@@ -140,10 +140,10 @@ abstract class AppLocalizations {
   /// **'No records yet'**
   String get survivalLeaderboardEmpty;
 
-  /// Friendly error when survival leaderboard fails to load
+  /// Friendly error when time trial leaderboard fails to load
   ///
   /// In en, this message translates to:
-  /// **'Could not load the survival ranking. Check your connection and try again.'**
+  /// **'Could not load the time trial ranking. Check your connection and try again.'**
   String get survivalLeaderboardError;
 
   /// Retry button on survival leaderboard error state
@@ -170,7 +170,7 @@ abstract class AppLocalizations {
   /// **'Back to menu'**
   String get survivalBackToMenu;
 
-  /// Label under the boards-solved count on a survival ranking row
+  /// Label under the boards-solved count on a time trial ranking row
   ///
   /// In en, this message translates to:
   /// **'{count, plural, =1{board} other{boards}}'**

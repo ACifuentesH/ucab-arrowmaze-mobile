@@ -21,17 +21,17 @@ class AppLocalizationsEn extends AppLocalizations {
   String get creativeButton => 'CREATIVE';
 
   @override
-  String get survivalModeButton => 'SURVIVAL MODE';
+  String get survivalModeButton => 'TIME TRIAL MODE';
 
   @override
-  String get survivalLeaderboardTitle => 'Survival Leaderboard';
+  String get survivalLeaderboardTitle => 'Time Trial Leaderboard';
 
   @override
   String get survivalLeaderboardEmpty => 'No records yet';
 
   @override
   String get survivalLeaderboardError =>
-      'Could not load the survival ranking. Check your connection and try again.';
+      'Could not load the time trial ranking. Check your connection and try again.';
 
   @override
   String get survivalLeaderboardRetry => 'Retry';

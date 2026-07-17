@@ -16,21 +16,21 @@
   "@creativeButton": {
     "description": "Level select button that opens the AI level generator (map builder)"
   },
-  "survivalModeButton": "SURVIVAL MODE",
+  "survivalModeButton": "TIME TRIAL MODE",
   "@survivalModeButton": {
-    "description": "Home button that starts a timed survival run"
+    "description": "Home button that starts a time trial run"
   },
-  "survivalLeaderboardTitle": "Survival Leaderboard",
+  "survivalLeaderboardTitle": "Time Trial Leaderboard",
   "@survivalLeaderboardTitle": {
-    "description": "Title of the survival mode leaderboard screen"
+    "description": "Title of the time trial mode leaderboard screen"
   },
   "survivalLeaderboardEmpty": "No records yet",
   "@survivalLeaderboardEmpty": {
     "description": "Empty state when survival leaderboard has no entries"
   },
-  "survivalLeaderboardError": "Could not load the survival ranking. Check your connection and try again.",
+  "survivalLeaderboardError": "Could not load the time trial ranking. Check your connection and try again.",
   "@survivalLeaderboardError": {
-    "description": "Friendly error when survival leaderboard fails to load"
+    "description": "Friendly error when time trial leaderboard fails to load"
   },
   "survivalLeaderboardRetry": "Retry",
   "@survivalLeaderboardRetry": {
@@ -50,7 +50,7 @@
   },
   "survivalBoardsSolved": "{count, plural, =1{board} other{boards}}",
   "@survivalBoardsSolved": {
-    "description": "Label under the boards-solved count on a survival ranking row",
+    "description": "Label under the boards-solved count on a time trial ranking row",
     "placeholders": {
       "count": {
         "type": "int"

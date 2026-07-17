@@ -21,17 +21,17 @@ class AppLocalizationsEs extends AppLocalizations {
   String get creativeButton => 'CREATIVO';
 
   @override
-  String get survivalModeButton => 'MODO SUPERVIVENCIA';
+  String get survivalModeButton => 'MODO CONTRA RELOJ';
 
   @override
-  String get survivalLeaderboardTitle => 'Ranking Supervivencia';
+  String get survivalLeaderboardTitle => 'Ranking Contra reloj';
 
   @override
   String get survivalLeaderboardEmpty => 'Aún no hay marcas registradas';
 
   @override
   String get survivalLeaderboardError =>
-      'No se pudo cargar el ranking de supervivencia. Revisa tu conexión e inténtalo de nuevo.';
+      'No se pudo cargar el ranking de contra reloj. Revisa tu conexión e inténtalo de nuevo.';
 
   @override
   String get survivalLeaderboardRetry => 'Reintentar';

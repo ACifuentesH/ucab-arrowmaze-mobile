@@ -302,7 +302,7 @@ final getSurvivalLeaderboardUseCaseProvider =
       ),
     );
 
-/// Top 10 del ranking de supervivencia (partidas de 120 s).
+/// Top 10 del ranking de contra reloj (partidas de 120 s).
 final survivalLeaderboardProvider =
     FutureProvider.autoDispose<List<SurvivalEntryDto>>((ref) {
       return ref

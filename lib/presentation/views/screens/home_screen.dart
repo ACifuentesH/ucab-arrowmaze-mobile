@@ -25,7 +25,7 @@ class HomeScreen extends ConsumerStatefulWidget {
   /// Key estable del botón "JUGAR" para las pruebas de navegación.
   static const Key playButtonKey = Key('home_play_button');
 
-  /// Key estable del botón "MODO SUPERVIVENCIA" para las pruebas de navegación.
+  /// Key estable del botón "MODO CONTRA RELOJ" para las pruebas de navegación.
   static const Key survivalButtonKey = Key('home_survival_button');
 
   /// Key estable del ícono de cuenta (menú de usuario autenticado).
