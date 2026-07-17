@@ -9,12 +9,14 @@ class HudView extends StatelessWidget {
   final GameState gameState;
   final VoidCallback? onToggleMute;
   final bool showLevelTimer;
+  final bool showLives;
 
   const HudView({
     super.key,
     required this.gameState,
     this.onToggleMute,
     this.showLevelTimer = true,
+    this.showLives = true,
   });
 
   static const ThemeConfig _t = ThemeConfig.dark;
@@ -29,23 +31,25 @@ class HudView extends StatelessWidget {
     final displaySeconds =
         limit != null ? (limit - elapsed).clamp(0, limit) : elapsed;
     final isUrgent = limit != null && displaySeconds <= 10;
+    final shouldShowLives =
+        showLives && gameState.mode != GamePlayMode.survival;
 
     return Container(
       color: _t.boardBackground,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          // Corazones
-          Row(
-            children: List.generate(_maxLivesToShow, (i) {
-              final active = i < livesCount;
-              return Icon(
-                active ? Icons.favorite : Icons.favorite_border,
-                color: active ? _t.lifeActive : _t.lifeEmpty,
-                size: 22,
-              );
-            }),
-          ),
+          if (shouldShowLives)
+            Row(
+              children: List.generate(_maxLivesToShow, (i) {
+                final active = i < livesCount;
+                return Icon(
+                  active ? Icons.favorite : Icons.favorite_border,
+                  color: active ? _t.lifeActive : _t.lifeEmpty,
+                  size: 22,
+                );
+              }),
+            ),
           const Spacer(),
           if (showLevelTimer) ...[
             // Cronómetro / cuenta regresiva (por-lvl)

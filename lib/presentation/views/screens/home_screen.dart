@@ -67,6 +67,47 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     );
   }
 
+  Future<void> _onSurvivalPressed() async {
+    final auth = ref.read(authViewModelProvider);
+    if (auth.status == AuthStatus.authenticated) {
+      _goToSurvival();
+      return;
+    }
+
+    final choice = await showLoginPromptSheet(context);
+    if (!mounted) return;
+
+    switch (choice) {
+      case LoginPromptChoice.guest:
+        _goToSurvival();
+        break;
+      case LoginPromptChoice.login:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const LoginScreen()),
+        );
+        if (!mounted) return;
+        if (ref.read(authViewModelProvider).status ==
+            AuthStatus.authenticated) {
+          _goToSurvival();
+        }
+        break;
+      case LoginPromptChoice.register:
+        await Navigator.push(
+          context,
+          MaterialPageRoute(builder: (_) => const RegisterScreen()),
+        );
+        if (!mounted) return;
+        if (ref.read(authViewModelProvider).status ==
+            AuthStatus.authenticated) {
+          _goToSurvival();
+        }
+        break;
+      case null:
+        break;
+    }
+  }
+
   Future<void> _onPlayPressed() async {
     final auth = ref.read(authViewModelProvider);
     if (auth.isAuthenticated || _guestPromptDismissed) {
@@ -162,9 +203,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       onPressed: auth.isLoading
                           ? null
                           : () => setState(
-                              () => _accountMenuOpen = !_accountMenuOpen),
-                      icon: Icon(Icons.person,
-                          color: _t.hudText.withValues(alpha: 0.85)),
+                              () => _accountMenuOpen = !_accountMenuOpen,
+                            ),
+                      icon: Icon(
+                        Icons.person,
+                        color: _t.hudText.withValues(alpha: 0.85),
+                      ),
                     ),
                     if (_accountMenuOpen)
                       _UserAccountCard(
@@ -184,8 +228,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                   Text(
                     l.homeTagline,
                     style: TextStyle(
-                        fontSize: 15,
-                        color: _t.hudText.withValues(alpha: 0.7)),
+                      fontSize: 15,
+                      color: _t.hudText.withValues(alpha: 0.7),
+                    ),
                   ),
                   const SizedBox(height: 72),
                   FilledButton(
@@ -195,9 +240,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       foregroundColor: _t.onPrimary,
                       minimumSize: const Size(200, 52),
                       textStyle: const TextStyle(
-                          fontSize: 18, fontWeight: FontWeight.bold),
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
                     onPressed: _onPlayPressed,
                     child: Text(l.playButton),
@@ -210,11 +258,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       side: const BorderSide(color: Color(0xFFFF6B35)),
                       minimumSize: const Size(200, 48),
                       textStyle: const TextStyle(
-                          fontSize: 14, fontWeight: FontWeight.bold),
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
                       shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(14)),
+                        borderRadius: BorderRadius.circular(14),
+                      ),
                     ),
-                    onPressed: _goToSurvival,
+                    onPressed: _onSurvivalPressed,
                     icon: const Icon(Icons.local_fire_department, size: 20),
                     label: Text(l.survivalModeButton),
                   ),
@@ -279,9 +330,12 @@ class _UserAccountCard extends StatelessWidget {
                   backgroundColor: _t.primary,
                   foregroundColor: _t.onPrimary,
                   textStyle: const TextStyle(
-                      fontSize: 13, fontWeight: FontWeight.bold),
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
+                  ),
                   shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(12)),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
                 ),
                 onPressed: isLoading ? null : onLogout,
                 child: isLoading

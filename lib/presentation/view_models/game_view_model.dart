@@ -141,8 +141,13 @@ class GameViewModel extends StateNotifier<GameState> {
     final board = state.board;
     if (board == null) return false;
 
+    final isSurvival = state.mode == GamePlayMode.survival;
     final arrowSnapshot = board.arrowById(arrowId);
-    final valid = _removeArrow.execute(board, arrowId);
+    final valid = _removeArrow.execute(
+      board,
+      arrowId,
+      applyLifePenalty: !isSurvival,
+    );
 
     if (valid) {
       // Si esta salida vacía el tablero, el Board ya está en levelCleared, pero
@@ -155,17 +160,22 @@ class GameViewModel extends StateNotifier<GameState> {
         board: board,
         escapingArrow: arrowSnapshot,
         clearBlocked: true,
-        deferLevelCleared: clearsBoard && state.mode != GamePlayMode.survival,
+        deferLevelCleared: clearsBoard && !isSurvival,
       );
       Future.delayed(const Duration(milliseconds: 350), () {
         if (mounted) state = state.copyWith(clearEscaping: true);
       });
-      if (clearsBoard && state.mode != GamePlayMode.survival) {
+      if (clearsBoard && !isSurvival) {
         Future.delayed(victoryRevealDelay, () {
           if (!mounted) return;
           state = state.copyWith(deferLevelCleared: false);
         });
       }
+    } else if (isSurvival) {
+      // Supervivencia: error = reinicio inmediato del tablero actual (sin vidas).
+      _processEvents(board);
+      unawaited(restart());
+      return false;
     } else {
       state = state.copyWith(
         board: board,

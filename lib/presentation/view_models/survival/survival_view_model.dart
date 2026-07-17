@@ -21,6 +21,7 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
   final SubmitSurvivalRunUseCase _submitSurvivalRun;
   final ILevelCatalogService _levelCatalog;
   final IAudioService _audioService;
+  final bool Function() _isAuthenticated;
 
   Timer? _timer;
   bool _advancingToNext = false;
@@ -28,17 +29,20 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
   final math.Random _rng = math.Random();
   List<LevelPreview> _levels = const [];
   int _durationSeconds = 120;
+  String? _lastLevelId;
 
   SurvivalViewModel({
     required GameViewModel game,
     required SubmitSurvivalRunUseCase submitSurvivalRun,
     required ILevelCatalogService levelCatalog,
     required IAudioService audioService,
-  })  : _game = game,
-        _submitSurvivalRun = submitSurvivalRun,
-        _levelCatalog = levelCatalog,
-        _audioService = audioService,
-        super(const SurvivalState.initial());
+    required bool Function() isAuthenticated,
+  }) : _game = game,
+       _submitSurvivalRun = submitSurvivalRun,
+       _levelCatalog = levelCatalog,
+       _audioService = audioService,
+       _isAuthenticated = isAuthenticated,
+       super(const SurvivalState.initial());
 
   Future<void> start({
     int durationSeconds = 120,
@@ -56,6 +60,7 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     _timer?.cancel();
     _timer = null;
     _advancingToNext = false;
+    _lastLevelId = null;
 
     state = SurvivalState(
       timeLeft: durationSeconds,
@@ -90,28 +95,18 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     if (state.phase != SurvivalPhase.running) return;
     if (_advancingToNext) return;
 
-    if (gameState.status == GameStatus.levelCleared) {
-      _advancingToNext = true;
-      state = state.copyWith(boardsCleared: state.boardsCleared + 1);
+    // En supervivencia el error reinicia el tablero actual (GameViewModel);
+    // solo avanzamos de nivel al completar.
+    if (gameState.status != GameStatus.levelCleared) return;
 
-      Future.delayed(GameViewModel.victoryRevealDelay, () async {
-        if (!mounted || state.phase != SurvivalPhase.running) return;
-        await _loadRandomLevel();
-        _advancingToNext = false;
-      });
-      return;
-    }
+    _advancingToNext = true;
+    state = state.copyWith(boardsCleared: state.boardsCleared + 1);
 
-    // Derrota: cargamos otro tablero pero no incrementamos boardsCleared.
-    if (gameState.status == GameStatus.gameOver) {
-      _advancingToNext = true;
-
-      Future.delayed(const Duration(milliseconds: 450), () async {
-        if (!mounted || state.phase != SurvivalPhase.running) return;
-        await _loadRandomLevel();
-        _advancingToNext = false;
-      });
-    }
+    Future.delayed(GameViewModel.victoryRevealDelay, () async {
+      if (!mounted || state.phase != SurvivalPhase.running) return;
+      await _loadRandomLevel();
+      _advancingToNext = false;
+    });
   }
 
   Future<void> _onTimeExpired() async {
@@ -122,6 +117,11 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     await _audioService.stopMusic();
 
     state = state.copyWith(phase: SurvivalPhase.submitting, errorMessage: null);
+
+    if (!_isAuthenticated()) {
+      state = state.copyWith(phase: SurvivalPhase.success);
+      return;
+    }
 
     final playedDurationSeconds = _durationSeconds; // llega a 0s siempre
     final input = SubmitSurvivalInput(
@@ -147,8 +147,16 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     if (!mounted) return;
     if (_levels.isEmpty) return;
 
-    final level = _levels[_rng.nextInt(_levels.length)];
-    // LevelPreview
+    LevelPreview level;
+    if (_levels.length == 1) {
+      level = _levels.first;
+    } else {
+      do {
+        level = _levels[_rng.nextInt(_levels.length)];
+      } while (level.id == _lastLevelId);
+    }
+    _lastLevelId = level.id;
+
     await _game.loadLevel(
       level.id,
       difficulty: level.difficulty,
@@ -162,4 +170,3 @@ class SurvivalViewModel extends StateNotifier<SurvivalState> {
     super.dispose();
   }
 }
-

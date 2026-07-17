@@ -11,8 +11,16 @@ class RemoveArrowUseCase implements IRemoveArrowUseCase {
   RemoveArrowUseCase({required CommandInvoker invoker}) : _invoker = invoker;
 
   @override
-  bool execute(Board board, String arrowId) {
-    final command = RemoveArrowCommand(board: board, arrowId: arrowId);
+  bool execute(
+    Board board,
+    String arrowId, {
+    bool applyLifePenalty = true,
+  }) {
+    final command = RemoveArrowCommand(
+      board: board,
+      arrowId: arrowId,
+      applyLifePenalty: applyLifePenalty,
+    );
     return _invoker.execute(command);
   }
 }

@@ -15,8 +15,7 @@ class SurvivalGameScreen extends ConsumerStatefulWidget {
   final int durationSeconds;
 
   @override
-  ConsumerState<SurvivalGameScreen> createState() =>
-      _SurvivalGameScreenState();
+  ConsumerState<SurvivalGameScreen> createState() => _SurvivalGameScreenState();
 }
 
 class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
@@ -25,9 +24,11 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => ref
-        .read(survivalViewModelProvider.notifier)
-        .start(durationSeconds: widget.durationSeconds));
+    Future.microtask(
+      () => ref
+          .read(survivalViewModelProvider.notifier)
+          .start(durationSeconds: widget.durationSeconds),
+    );
   }
 
   void _playAgain() {
@@ -52,6 +53,29 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
     Navigator.of(context).pop();
   }
 
+  Future<void> _confirmExit() async {
+    final shouldExit = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        title: const Text('¿Abandonar partida?'),
+        content: const Text('Perderás tu progreso'),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: const Text('Cancelar'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: const Text('Abandonar'),
+          ),
+        ],
+      ),
+    );
+
+    if (!mounted || shouldExit != true) return;
+    _exitToMenu();
+  }
+
   @override
   Widget build(BuildContext context) {
     final survival = ref.watch(survivalViewModelProvider);
@@ -72,10 +96,12 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
                 timeLeftSeconds: survival.timeLeft,
                 boardsCleared: survival.boardsCleared,
                 isUrgent: urgent,
+                onExit: _confirmExit,
               ),
               Expanded(
                 child: AbsorbPointer(
-                  absorbing: survival.phase == SurvivalPhase.submitting ||
+                  absorbing:
+                      survival.phase == SurvivalPhase.submitting ||
                       survival.phase == SurvivalPhase.ended ||
                       survival.phase == SurvivalPhase.success ||
                       survival.phase == SurvivalPhase.error,
@@ -85,6 +111,7 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
                         gameState: gs,
                         onToggleMute: ctrl.toggleMute,
                         showLevelTimer: false,
+                        showLives: false,
                       ),
                       Expanded(
                         child: Padding(
@@ -130,11 +157,13 @@ class _TopBar extends StatelessWidget {
     required this.timeLeftSeconds,
     required this.boardsCleared,
     required this.isUrgent,
+    required this.onExit,
   });
 
   final int timeLeftSeconds;
   final int boardsCleared;
   final bool isUrgent;
+  final VoidCallback onExit;
 
   static const ThemeConfig _t = ThemeConfig.dark;
 
@@ -145,8 +174,19 @@ class _TopBar extends StatelessWidget {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
-          Icon(Icons.timer,
-              color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText, size: 18),
+          IconButton(
+            tooltip: 'Abandonar partida',
+            onPressed: onExit,
+            icon: Icon(Icons.arrow_back, color: _t.hudText),
+            padding: EdgeInsets.zero,
+            constraints: const BoxConstraints(),
+          ),
+          const SizedBox(width: 16),
+          Icon(
+            Icons.timer,
+            color: isUrgent ? const Color(0xFFFF3D68) : _t.hudText,
+            size: 18,
+          ),
           const SizedBox(width: 6),
           Text(
             _fmt(timeLeftSeconds),
@@ -181,7 +221,7 @@ class _TopBar extends StatelessWidget {
   }
 }
 
-class _SurvivalOverlay extends StatelessWidget {
+class _SurvivalOverlay extends ConsumerWidget {
   const _SurvivalOverlay({
     required this.survival,
     required this.onBack,
@@ -202,8 +242,9 @@ class _SurvivalOverlay extends StatelessWidget {
   static const Color _accent = Color(0xFFFF6B35);
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final l = AppLocalizations.of(context)!;
+    final isAuthenticated = ref.watch(authViewModelProvider).isAuthenticated;
 
     final children = <Widget>[
       Icon(
@@ -234,6 +275,21 @@ class _SurvivalOverlay extends StatelessWidget {
       ),
     ];
 
+    if (survival.phase == SurvivalPhase.success && !isAuthenticated) {
+      children.addAll([
+        const SizedBox(height: 8),
+        Text(
+          'Puntaje no guardado. Inicia sesión para entrar al ranking.',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: Colors.white.withValues(alpha: 0.62),
+            fontSize: 12,
+            fontStyle: FontStyle.italic,
+          ),
+        ),
+      ]);
+    }
+
     if (survival.phase == SurvivalPhase.submitting) {
       children.addAll([
         const SizedBox(height: 24),
@@ -245,7 +301,8 @@ class _SurvivalOverlay extends StatelessWidget {
       ]);
     }
 
-    if (survival.phase == SurvivalPhase.error && survival.errorMessage != null) {
+    if (survival.phase == SurvivalPhase.error &&
+        survival.errorMessage != null) {
       children.addAll([
         const SizedBox(height: 16),
         Text(
@@ -371,11 +428,7 @@ class _SurvivalOverlay extends StatelessWidget {
             constraints: const BoxConstraints(maxWidth: 320),
             child: Column(
               mainAxisSize: MainAxisSize.min,
-              children: [
-                ...children,
-                const SizedBox(height: 24),
-                actions,
-              ],
+              children: [...children, const SizedBox(height: 24), actions],
             ),
           ),
         ),
