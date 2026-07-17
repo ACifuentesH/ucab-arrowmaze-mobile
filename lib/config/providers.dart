@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:arrow_maze/application/builders/level_builder.dart';
 import 'package:arrow_maze/application/commands/command_invoker.dart';
 import 'package:arrow_maze/application/dtos/level_preview.dart';
+import 'package:arrow_maze/application/dtos/survival_entry_dto.dart';
 import 'package:arrow_maze/application/ports/i_api_client.dart';
 import 'package:arrow_maze/application/ports/i_audio_service.dart';
 import 'package:arrow_maze/application/ports/i_generated_level_repository.dart';
@@ -301,6 +302,14 @@ final getSurvivalLeaderboardUseCaseProvider =
       ),
     );
 
+/// Top 10 del ranking de supervivencia (partidas de 120 s).
+final survivalLeaderboardProvider =
+    FutureProvider.autoDispose<List<SurvivalEntryDto>>((ref) {
+      return ref
+          .read(getSurvivalLeaderboardUseCaseProvider)
+          .execute(durationSeconds: 120, limit: 10);
+    });
+
 final syncProgressUseCaseProvider = Provider<SyncProgressUseCase>(
   (ref) => SyncProgressUseCase(api: ref.read(apiClientProvider)),
 );
@@ -371,6 +380,7 @@ final survivalViewModelProvider =
         audioService: ref.read(audioServiceProvider),
         isAuthenticated: () =>
             ref.read(authViewModelProvider).status == AuthStatus.authenticated,
+        onLeaderboardUpdated: () => ref.invalidate(survivalLeaderboardProvider),
       );
 
       // Orquestacion: ante victoria del tablero, el superviviente carga
