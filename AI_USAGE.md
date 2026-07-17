@@ -324,6 +324,27 @@
 
 ---
 
+### Entry 020 — feature/remote-level-catalog: el backend pasa a ser la fuente de verdad de los niveles de campaña
+
+**Task:** Auditoría del dueño del proyecto: el backend desplegado (Railway) tenía toda la infraestructura de niveles (`level_definitions`, `GET/PUT /levels`) sin usar — `GET /levels` devolvía `[]`, los 15 niveles vivían solo como assets, y `HttpApiClient.getLevels()/getLevelById()` eran código muerto en el cliente. Corregirlo: persistir la campaña en el backend y que la app la consuma de ahí, sin romper el juego offline.
+
+**Prompt (paraphrase):** "La persistencia de los niveles debería estar en el backend, para qué tener toda esa infraestructura si no se usa correctamente… vamos a corregir eso y tener los niveles en Railway."
+
+**Result obtained:**
+- **Seed (repo backend, `scripts/seed-levels.mjs`):** siembra los 15 niveles de campaña vía `PUT /levels/:id` (HTTP puro — no necesita `DATABASE_URL`, funciona contra cualquier despliegue), transformando el formato plano de `assets/levels/*.json` al body del upsert. Login-o-registro con credenciales de env (`SEED_*`, en `.env` gitignored). Idempotente (upsert). **Ejecutado contra Railway: 15/15 sembrados, `GET /levels` ahora devuelve 15.**
+- **Trampa detectada antes de escribir código:** `GET /levels` devuelve orden lexicográfico (`level_1, level_10, level_11…, level_2…`) y la regla de desbloqueo de `GetLevelSelectionUseCase` encadena en el orden del catálogo — consumirlo crudo desbloquearía la campaña en orden equivocado. Decisión: **contenido remoto, orden local** (el manifest sigue siendo la autoridad de la secuencia).
+- **`BackendLevelCatalogService`** (nuevo): `GET /levels` → previews con `LevelSource.asset` (los niveles del backend SON la campaña; la UI no distingue).
+- **`RemoteFirstLevelCatalogService`** (nuevo, decorador): fusiona remoto+local — id en ambos → gana el contenido remoto en la posición local; id solo local (seed incompleto) → se sirve el bundleado; id solo remoto → se anexa al final (publicar niveles nuevos sin republicar la app); backend caído o vacío → campaña bundleada intacta (offline-first).
+- **`RemoteJsonLevelRepository`** (nuevo): `GET /levels/:id` → `LevelBuilder.build`. Primer eslabón de `ChainedLevelRepository`, ahora `[Remote, Generated, Asset]` — generados antes que assets también elimina el ruido de consola web (`assets/assets/levels/generated_*.json 404`) que producía el orden viejo.
+- **Providers:** solo cambian `levelRepositoryProvider` y `levelCatalogServiceProvider` — la ranura que `ChainedLevelRepository` documentaba ("agregar fuentes remotas… solo requiere añadir un elemento a la lista") se usó tal cual estaba prevista.
+- **Tests:** 8 nuevos (6 del catálogo remoto-primero: orden local con backend alcanzable, contenido remoto gana, fallback por red caída, fallback por catálogo vacío, niveles solo-remotos anexados, nivel faltante en backend servido del bundle; 2 del repositorio remoto). `RemoteCatalogTestApi`/`RemoteLevelRepositoryTestApi` + param `name` añadido a `LevelDefinitionMother.withEscapableArrow`. Suite completa 261/261.
+
+**Team modifications:** Pendiente de revisión.
+
+**Lessons learned:** La infraestructura "muerta" en ambos lados (endpoints sin consumidor, métodos de cliente sin caller) no era mala arquitectura sino una integración que nunca entró al backlog: cada mitad cumplió el contrato y nadie cosió la costura. Y el orden de un `findAll()` es parte del contrato aunque nadie lo escriba: la regla de progresión dependía de un orden que el backend no garantiza — hacer explícito "contenido remoto, orden local" convirtió una suposición silenciosa en una regla testeada.
+
+---
+
 ## Critical Evaluation
 
 - **Approximate share of AI-assisted code:** ~85% of the lines in this repository were written with AI assistance, under team-defined architecture, contracts and review. All AI-generated code is covered by the test suite.

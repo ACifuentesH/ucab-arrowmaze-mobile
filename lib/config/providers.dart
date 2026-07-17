@@ -48,11 +48,14 @@ import 'package:arrow_maze/domain/ports/i_time_service.dart';
 import 'package:arrow_maze/domain/services/procedural_arrow_placer.dart';
 import 'package:arrow_maze/infrastructure/api/http_api_client.dart';
 import 'package:arrow_maze/infrastructure/catalog/asset_level_catalog_service.dart';
+import 'package:arrow_maze/infrastructure/catalog/backend_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/composite_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/generated_level_catalog_service.dart';
+import 'package:arrow_maze/infrastructure/catalog/remote_first_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/repositories/asset_json_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/chained_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/generated_json_level_repository.dart';
+import 'package:arrow_maze/infrastructure/repositories/remote_json_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_generated_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_player_progress_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/shared_prefs_token_storage.dart';
@@ -98,14 +101,22 @@ final playerProgressRepositoryProvider = Provider<IPlayerProgressRepository>(
       SharedPrefsPlayerProgressRepository(ref.read(sharedPreferencesProvider)),
 );
 
-// ChainedLevelRepository: Chain of Responsibility ? assets ? generated.
+// ChainedLevelRepository: Chain of Responsibility → backend → generados →
+// assets. El backend (Railway) es la fuente de verdad del contenido; los
+// generados viven en local; los assets quedan como fallback offline. Los
+// generados van antes que los assets para que su carga no dispare el fetch
+// de asset condenado al 404 (ruido en consola web).
 final levelRepositoryProvider = Provider<ILevelRepository>(
   (ref) => ChainedLevelRepository([
-    AssetJsonLevelRepository(builder: ref.read(levelBuilderProvider)),
+    RemoteJsonLevelRepository(
+      api: ref.read(apiClientProvider),
+      builder: ref.read(levelBuilderProvider),
+    ),
     GeneratedJsonLevelRepository(
       source: ref.read(generatedLevelRepositoryProvider),
       builder: ref.read(levelBuilderProvider),
     ),
+    AssetJsonLevelRepository(builder: ref.read(levelBuilderProvider)),
   ]),
 );
 
@@ -133,7 +144,12 @@ final arrowPlacerProvider = Provider<IArrowPlacer>(
 
 final levelCatalogServiceProvider = Provider<ILevelCatalogService>(
   (ref) => CompositeLevelCatalogService([
-    const AssetLevelCatalogService(),
+    // Campaña: contenido del backend, orden del manifest local, fallback
+    // offline a los assets bundleados (ver RemoteFirstLevelCatalogService).
+    RemoteFirstLevelCatalogService(
+      remote: BackendLevelCatalogService(ref.read(apiClientProvider)),
+      local: const AssetLevelCatalogService(),
+    ),
     GeneratedLevelCatalogService(ref.read(generatedLevelRepositoryProvider)),
   ]),
 );
