@@ -33,8 +33,9 @@ class CachingProxyTestApi {
       LeaderboardEntryMother.entry(username: 'alice', score: 950),
       LeaderboardEntryMother.entry(username: 'bob', score: 800),
     ];
-    when(() => _delegate.execute(any(), limit: any(named: 'limit')))
-        .thenAnswer((_) async => _delegateResult);
+    when(
+      () => _delegate.execute(any(), limit: any(named: 'limit')),
+    ).thenAnswer((_) async => _delegateResult);
     return this;
   }
 
@@ -48,9 +49,14 @@ class CachingProxyTestApi {
     return this;
   }
 
-  void thenTheWrappedUseCaseShouldHaveBeenCalled(int times) =>
-      verify(() => _delegate.execute(any(), limit: any(named: 'limit')))
-          .called(times);
+  CachingProxyTestApi whenTheLeaderboardCacheIsInvalidated() {
+    _proxy.invalidate(levelId: _levelId);
+    return this;
+  }
+
+  void thenTheWrappedUseCaseShouldHaveBeenCalled(int times) => verify(
+    () => _delegate.execute(any(), limit: any(named: 'limit')),
+  ).called(times);
 
   void thenTheResultShouldBeTheLeaderboard() =>
       expect(_result, equals(_delegateResult));

@@ -30,9 +30,23 @@ class CachingUseCaseProxy implements GetLeaderboardUseCase {
     required GetLeaderboardUseCase delegate,
     Duration ttl = const Duration(seconds: 30),
     DateTime Function() clock = DateTime.now,
-  })  : _delegate = delegate,
-        _ttl = ttl,
-        _clock = clock;
+  }) : _delegate = delegate,
+       _ttl = ttl,
+       _clock = clock;
+
+  /// Descarta el ranking de [levelId], o toda la caché si no se especifica.
+  ///
+  /// Debe invocarse después de guardar un puntaje en el servidor para que la
+  /// siguiente lectura no reutilice una entrada anterior a la escritura.
+  void invalidate({String? levelId}) {
+    if (levelId == null) {
+      _cache.clear();
+      return;
+    }
+
+    final prefix = '$levelId::';
+    _cache.removeWhere((key, _) => key.startsWith(prefix));
+  }
 
   @override
   Future<List<LeaderboardEntryDto>> execute(

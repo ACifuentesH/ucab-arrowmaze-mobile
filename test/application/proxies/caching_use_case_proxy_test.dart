@@ -34,5 +34,15 @@ void main() {
 
       api.thenTheWrappedUseCaseShouldHaveBeenCalled(2);
     });
+
+    test('should_fetch_fresh_data_after_cache_invalidation', () async {
+      final api = CachingProxyTestApi().givenTheLeaderboardHasEntries();
+
+      await api.whenTheLeaderboardIsRequested();
+      api.whenTheLeaderboardCacheIsInvalidated();
+      await api.whenTheLeaderboardIsRequested();
+
+      api.thenTheWrappedUseCaseShouldHaveBeenCalled(2);
+    });
   });
 }
