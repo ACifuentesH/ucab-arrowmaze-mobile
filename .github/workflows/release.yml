@@ -1,0 +1,54 @@
+# Build del APK de Android y publicación como GitHub Release.
+# Corre en los runners de GitHub (ya traen el SDK de Android) — no requiere
+# tener el toolchain de Android instalado localmente.
+# Se dispara al pushear un tag "v*" (ej. v1.0.0).
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write # necesario para crear el Release y subir el APK
+
+jobs:
+  build-and-release:
+    name: build-android-apk
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Java (requerido por el build de Android/Gradle)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+
+      - name: Setup Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: 3.44.2
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get --enforce-lockfile
+
+      # APK firmado con la key de debug de Flutter: instalable y funcional,
+      # no apto para publicar en Play Store (eso requeriría un keystore de
+      # release propio) — suficiente para el entregable académico.
+      - name: Build release APK
+        run: flutter build apk --release --no-pub
+
+      - name: Rename APK with version tag
+        run: cp build/app/outputs/flutter-apk/app-release.apk "arrow-maze-${{ github.ref_name }}.apk"
+
+      - name: Create GitHub Release with APK attached
+        uses: softprops/action-gh-release@v2
+        with:
+          files: arrow-maze-${{ github.ref_name }}.apk
+          generate_release_notes: true
