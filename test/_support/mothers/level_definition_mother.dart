@@ -19,12 +19,13 @@ class LevelDefinitionMother {
   /// Solo 'a1' con el carril despejado: escapable, y al salir limpia el nivel.
   static LevelDefinition withEscapableArrow({
     String id = 'level_test',
+    String name = 'Test Level',
     int lives = 3,
     int? timeLimitSeconds,
   }) =>
       LevelDefinition(
         id: id,
-        name: 'Test Level',
+        name: name,
         lives: lives,
         cells: _threeByThree,
         arrows: [ArrowMother.eastwardSpec()],
