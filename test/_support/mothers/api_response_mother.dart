@@ -1,0 +1,149 @@
+import 'level_definition_mother.dart';
+
+/// Object Mother: envelopes JSON tal como los emite ucab-arrowmaze-api
+/// (docs/backend-context.md §7).
+class ApiResponseMother {
+  /// POST /auth/register 201 — nota: register expone `user.id`.
+  static Map<String, dynamic> registerSuccess({
+    String id = 'u-1',
+    String username = 'alice',
+    String email = 'alice@example.com',
+    String token = 'jwt-register',
+  }) =>
+      {
+        'success': true,
+        'data': {
+          'user': {'id': id, 'username': username, 'email': email},
+          'token': token,
+        },
+      };
+
+  /// POST /auth/login 200 — nota: login expone `user.userId`.
+  static Map<String, dynamic> loginSuccess({
+    String userId = 'u-1',
+    String username = 'alice',
+    String email = 'alice@example.com',
+    String token = 'jwt-login',
+  }) =>
+      {
+        'success': true,
+        'data': {
+          'user': {'userId': userId, 'username': username, 'email': email},
+          'token': token,
+        },
+      };
+
+  /// GET/PUT /progress 200.
+  static Map<String, dynamic> progress({
+    String userId = 'u-1',
+    String currentLevelId = 'level_2',
+  }) =>
+      {
+        'success': true,
+        'data': {
+          'userId': userId,
+          'completedLevels': ['level_1'],
+          'bestScores': {'level_1': 900},
+          'currentLevelId': currentLevelId,
+        },
+      };
+
+  /// GET /leaderboard/:levelId 200 con una entry.
+  static Map<String, dynamic> leaderboardWithOneEntry({
+    String levelId = 'level_1',
+    int score = 950,
+  }) =>
+      {
+        'success': true,
+        'data': [
+          {
+            'userId': 'u-1',
+            'username': 'alice',
+            'levelId': levelId,
+            'score': score,
+            'moves': 8,
+            'timeSeconds': 45,
+            'rankedAt': '2026-07-01T00:00:00.000Z',
+          },
+        ],
+      };
+
+  static Map<String, dynamic> emptyLeaderboard() =>
+      {'success': true, 'data': <dynamic>[]};
+
+  /// GET /levels 200 con un LevelDto.
+  static Map<String, dynamic> levelsList() => {
+        'success': true,
+        'data': [LevelDefinitionMother.backendDtoJson()],
+      };
+
+  /// GET /levels/:id 200.
+  static Map<String, dynamic> levelDto({String id = 'level_1'}) =>
+      {'success': true, 'data': LevelDefinitionMother.backendDtoJson(id: id)};
+
+  /// POST /levels/generate 200 — el backend sólo devuelve el blob de datos
+  /// (sin id/name: eso lo completa el cliente a partir del LevelSpec).
+  static Map<String, dynamic> generatedLevelData() => {
+        'success': true,
+        'data': {
+          'cells': [
+            [0, 0],
+            [0, 1],
+            [1, 0],
+          ],
+          'arrows': [
+            {
+              'id': 'a1',
+              'path': [
+                [0, 0],
+                [0, 1],
+              ],
+              'color': '#EF476F',
+            },
+          ],
+          'lives': 5,
+        },
+      };
+
+  /// POST /levels/generate 200 — silueta dibujada lejos de (0,0), como hace
+  /// el modelo en la práctica (usa cualquier esquina del grid pedido).
+  static Map<String, dynamic> generatedLevelDataOffOrigin() => {
+        'success': true,
+        'data': {
+          'cells': [
+            [5, 8],
+            [5, 9],
+            [6, 8],
+          ],
+          'arrows': [
+            {
+              'id': 'a1',
+              'path': [
+                [5, 8],
+                [5, 9],
+              ],
+              'color': '#EF476F',
+            },
+          ],
+          'lives': 5,
+        },
+      };
+
+  /// Error genérico del backend.
+  static Map<String, dynamic> error(String message) =>
+      {'success': false, 'message': message};
+
+  /// 400 de validación con `details` (paths / regex), como emite el backend.
+  static Map<String, dynamic> validationErrorWithEmailDetails() => {
+        'success': false,
+        'message': 'Validation failed',
+        'details': [
+          {
+            'path': ['email'],
+            'message': 'Invalid string',
+            'validation': 'regex',
+            'regex': r'^[^\s@]+@[^\s@]+\.[^\s@]+$',
+          },
+        ],
+      };
+}

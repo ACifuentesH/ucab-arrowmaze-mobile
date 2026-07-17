@@ -1,0 +1,318 @@
+import 'dart:async';
+
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+
+import 'package:arrow_maze/domain/aggregates/board.dart';
+import 'package:arrow_maze/domain/events/domain_events.dart';
+import 'package:arrow_maze/domain/game_status.dart';
+import 'package:arrow_maze/domain/ports/i_time_service.dart';
+import 'package:arrow_maze/domain/value_objects/level_id.dart';
+import 'package:arrow_maze/application/dtos/playable_level.dart';
+import 'package:arrow_maze/application/enums/difficulty.dart';
+import 'package:arrow_maze/application/enums/sound_effect.dart';
+import 'package:arrow_maze/application/ports/i_audio_service.dart';
+import 'package:arrow_maze/application/ports/i_progress_sync_coordinator.dart';
+import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/load_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/i_remove_arrow_use_case.dart';
+import 'package:arrow_maze/application/use_cases/restart_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/undo_move_use_case.dart';
+import 'package:arrow_maze/presentation/view_models/game_state.dart';
+
+/// Gestor de estado (Observer pattern, vía Riverpod StateNotifier): las
+/// pantallas se suscriben con `ref.watch(...)` y son notificadas en cada
+/// cambio de estado. Conecta casos de uso con la UI.
+/// Consume (pull) los DomainEvents del Board para disparar audio y controlar
+/// el reloj — ese consumo es el patrón Domain Events (DDD), no Observer.
+class GameViewModel extends StateNotifier<GameState> {
+  /// Retraso de la transición observable a [GameStatus.levelCleared] tras el
+  /// escape de la última flecha. Debe superar ligeramente la animación de
+  /// salida de BoardView (`_escapeCtrl`, 520 ms) para que el overlay de
+  /// victoria no aparezca encima de la flecha mientras aún abandona el tablero.
+  /// El estado de dominio se registra síncronamente; solo se difiere lo que la
+  /// UI observa (ver [GameState.deferLevelCleared]).
+  static const Duration victoryRevealDelay = Duration(milliseconds: 550);
+
+  final LoadLevelUseCase _loadLevel;
+  final IRemoveArrowUseCase _removeArrow;
+  final RestartLevelUseCase _restart;
+  final UndoMoveUseCase _undo;
+  final CompleteLevelUseCase _completeLevel;
+  final ITimeService _timeService;
+  final IAudioService _audioService;
+  final IProgressSyncCoordinator? _progressSync;
+
+  StreamSubscription<int>? _timeSub;
+
+  /// Cola de juego actual (campaña o nivel suelto) y posición dentro de ella.
+  List<PlayableLevel> _queue = const [];
+  int _queueIndex = 0;
+
+  /// Foto del tablero al arrancar el nivel; alimenta la puntuación.
+  int _initialArrowCount = 0;
+  int _initialLives = 0;
+
+  GameViewModel({
+    required LoadLevelUseCase loadLevel,
+    required IRemoveArrowUseCase removeArrow,
+    required RestartLevelUseCase restart,
+    required UndoMoveUseCase undo,
+    required CompleteLevelUseCase completeLevel,
+    required ITimeService timeService,
+    required IAudioService audioService,
+    IProgressSyncCoordinator? progressSync,
+  })  : _loadLevel = loadLevel,
+        _removeArrow = removeArrow,
+        _restart = restart,
+        _undo = undo,
+        _completeLevel = completeLevel,
+        _timeService = timeService,
+        _audioService = audioService,
+        _progressSync = progressSync,
+        super(const GameState.initial());
+
+  /// Juega una secuencia de niveles (la campaña): al completar uno, la UI
+  /// puede pedir el siguiente con [playNext].
+  Future<void> startCampaign(
+    List<PlayableLevel> queue, {
+    int startIndex = 0,
+  }) {
+    _queue = List.unmodifiable(queue);
+    _queueIndex = startIndex;
+    state = state.copyWith(mode: GamePlayMode.campaign);
+    return _loadCurrent();
+  }
+
+  /// Juega un nivel suelto (ej. generado por IA).
+  Future<void> loadLevel(
+    String levelId, {
+    Difficulty difficulty = Difficulty.easy,
+    GamePlayMode mode = GamePlayMode.single,
+    String? levelName,
+  }) {
+    _queue = [
+      PlayableLevel(id: levelId, difficulty: difficulty, name: levelName),
+    ];
+    _queueIndex = 0;
+    state = state.copyWith(mode: mode);
+    return _loadCurrent();
+  }
+
+  bool get _hasNext => _queueIndex + 1 < _queue.length;
+
+  /// Avanza al siguiente nivel de la cola (habilitado tras completar).
+  Future<void> playNext() async {
+    if (!_hasNext) return;
+    _queueIndex++;
+    await _loadCurrent();
+  }
+
+  Future<void> _loadCurrent() async {
+    final level = _queue[_queueIndex];
+    _stopTimer();
+    state = state.copyWith(isLoading: true, clearError: true, clearResult: true);
+    try {
+      final board = await _loadLevel.execute(LevelId(level.id));
+      _initialArrowCount = board.arrowCount;
+      _initialLives = board.lives.value;
+      state = state.copyWith(
+        board: board,
+        currentLevelId: LevelId(level.id),
+        currentLevelName: level.name,
+        clearLevelName: level.name == null,
+        isLoading: false,
+        elapsedSeconds: 0,
+        clearBlocked: true,
+        clearEscaping: true,
+        hasNextLevel: _hasNext,
+        deferLevelCleared: false,
+      );
+      if (state.mode != GamePlayMode.survival) {
+        _startTimer();
+      }
+      await _audioService.playMusic();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  /// Toca la flecha [arrowId]. La UI obtiene el arrowId via hit-test del Board.
+  bool tapArrow(String arrowId) {
+    final board = state.board;
+    if (board == null) return false;
+
+    final isSurvival = state.mode == GamePlayMode.survival;
+    final arrowSnapshot = board.arrowById(arrowId);
+    final valid = _removeArrow.execute(
+      board,
+      arrowId,
+      applyLifePenalty: !isSurvival,
+    );
+
+    if (valid) {
+      // Si esta salida vacía el tablero, el Board ya está en levelCleared, pero
+      // retenemos esa transición observable ([GameState.deferLevelCleared]) para
+      // que BoardView complete su animación de escape antes de que GameScreen
+      // muestre el overlay de victoria. La flecha sigue mostrándose durante la
+      // ventana porque BoardView cachea su propia animación de escape.
+      final clearsBoard = board.status == GameStatus.levelCleared;
+      state = state.copyWith(
+        board: board,
+        escapingArrow: arrowSnapshot,
+        clearBlocked: true,
+        deferLevelCleared: clearsBoard && !isSurvival,
+      );
+      Future.delayed(const Duration(milliseconds: 350), () {
+        if (mounted) state = state.copyWith(clearEscaping: true);
+      });
+      if (clearsBoard && !isSurvival) {
+        Future.delayed(victoryRevealDelay, () {
+          if (!mounted) return;
+          state = state.copyWith(deferLevelCleared: false);
+        });
+      }
+    } else if (isSurvival) {
+      // Supervivencia: error = reinicio inmediato del tablero actual (sin vidas).
+      _processEvents(board);
+      unawaited(restart());
+      return false;
+    } else {
+      state = state.copyWith(
+        board: board,
+        lastBlockedArrowId: arrowId,
+      );
+      Future.delayed(const Duration(milliseconds: 450), () {
+        if (mounted) state = state.copyWith(clearBlocked: true);
+      });
+    }
+
+    // Domain Events (pull): procesa los DomainEvents emitidos por Board → audio.
+    _processEvents(board);
+    return valid;
+  }
+
+  Future<void> restart() async {
+    _stopTimer();
+    final id = state.currentLevelId;
+    if (id == null) return;
+    state = state.copyWith(
+        isLoading: true, clearBlocked: true, clearEscaping: true, clearResult: true);
+    try {
+      final board = await _restart.execute(id);
+      _initialArrowCount = board.arrowCount;
+      _initialLives = board.lives.value;
+      state = state.copyWith(
+        board: board,
+        isLoading: false,
+        elapsedSeconds: 0,
+        deferLevelCleared: false,
+      );
+      if (state.mode != GamePlayMode.survival) {
+        _startTimer();
+      }
+      await _audioService.playMusic();
+    } catch (e) {
+      state = state.copyWith(isLoading: false, errorMessage: e.toString());
+    }
+  }
+
+  void undo() {
+    final board = state.board;
+    if (board == null) return;
+    _undo.execute();
+    state = state.copyWith(board: board, clearBlocked: true, clearEscaping: true);
+  }
+
+  void toggleMute() {
+    _audioService.toggleMute();
+    state = state.copyWith(isMuted: _audioService.isMuted);
+  }
+
+  @override
+  void dispose() {
+    _timeSub?.cancel();
+    _timeService.stop();
+    super.dispose();
+  }
+
+  // ── Timer ─────────────────────────────────────────────────────────────────
+
+  void _startTimer() {
+    _timeSub?.cancel();
+    _timeService.reset();
+    _timeService.start();
+    _timeSub = _timeService.elapsed.listen(_onTick);
+  }
+
+  void _stopTimer() {
+    _timeSub?.cancel();
+    _timeSub = null;
+    _timeService.stop();
+    _timeService.reset();
+  }
+
+  void _onTick(int seconds) {
+    if (!mounted) return;
+    final board = state.board;
+    if (board == null) return;
+    board.applyTimeTick(seconds);
+    _processEvents(board);
+    if (mounted) state = state.copyWith(elapsedSeconds: seconds);
+  }
+
+  // ── Domain Events (pull): DomainEvents → audio ────────────────────────────
+
+  void _processEvents(Board board) {
+    for (final event in board.pullEvents()) {
+      if (event is ArrowEscaped) {
+        _audioService.playSfx(SoundEffect.arrowEscaped);
+      } else if (event is MoveBlocked) {
+        _audioService.playSfx(SoundEffect.moveBlocked);
+      } else if (event is LevelCleared) {
+        _audioService.playSfx(SoundEffect.levelCleared);
+        _audioService.stopMusic();
+        _stopTimer();
+        if (state.mode != GamePlayMode.survival) {
+          unawaited(_registerCompletion(board));
+        }
+      } else if (event is GameOver) {
+        _audioService.playSfx(SoundEffect.gameOver);
+        _audioService.stopMusic();
+        _stopTimer();
+      }
+    }
+  }
+
+  /// Puntúa el nivel, guarda el progreso local y dispara PUT /progress
+  /// (fire-and-forget vía [IProgressSyncCoordinator]) sin bloquear la UI.
+  Future<void> _registerCompletion(Board board) async {
+    if (_queue.isEmpty) return;
+    final level = _queue[_queueIndex];
+    final elapsedSeconds = state.elapsedSeconds;
+    final moves = board.moves.value;
+
+    final result = await _completeLevel.execute(
+      levelId: level.id,
+      difficulty: level.difficulty,
+      initialArrowCount: _initialArrowCount,
+      initialLives: _initialLives,
+      livesRemaining: board.lives.value,
+      elapsedSeconds: elapsedSeconds,
+      timeLimitSeconds: board.timeLimitSeconds,
+    );
+    if (mounted) state = state.copyWith(lastResult: result);
+
+    final sync = _progressSync;
+    if (sync == null) return;
+
+    final currentLevelId = _hasNext ? _queue[_queueIndex + 1].id : level.id;
+    // Asíncrono y no bloqueante: fallos remotos no deben tumbar la victoria.
+    unawaited(sync.pushCompletedLevel(
+      lastLevelId: level.id,
+      lastScore: result.score,
+      lastMoves: moves,
+      lastTimeSeconds: elapsedSeconds,
+      currentLevelId: currentLevelId,
+    ));
+  }
+}
