@@ -54,19 +54,20 @@ class _SurvivalGameScreenState extends ConsumerState<SurvivalGameScreen> {
   }
 
   Future<void> _confirmExit() async {
+    final l = AppLocalizations.of(context)!;
     final shouldExit = await showDialog<bool>(
       context: context,
       builder: (dialogContext) => AlertDialog(
-        title: const Text('¿Abandonar partida?'),
-        content: const Text('Perderás tu progreso'),
+        title: Text(l.survivalExitTitle),
+        content: Text(l.survivalExitMessage),
         actions: [
           TextButton(
             onPressed: () => Navigator.of(dialogContext).pop(false),
-            child: const Text('Cancelar'),
+            child: Text(l.cancelButton),
           ),
           FilledButton(
             onPressed: () => Navigator.of(dialogContext).pop(true),
-            child: const Text('Abandonar'),
+            child: Text(l.survivalExitButton),
           ),
         ],
       ),
@@ -184,7 +185,7 @@ class _TopBar extends StatelessWidget {
       child: Row(
         children: [
           IconButton(
-            tooltip: 'Abandonar partida',
+            tooltip: AppLocalizations.of(context)!.survivalExitTooltip,
             onPressed: onExit,
             icon: Icon(Icons.arrow_back, color: _t.hudText),
             padding: EdgeInsets.zero,
@@ -213,9 +214,7 @@ class _TopBar extends StatelessWidget {
             icon: Icon(Icons.emoji_events, color: _t.exitCell),
             style: IconButton.styleFrom(
               backgroundColor: _t.exitCell.withValues(alpha: 0.12),
-              side: BorderSide(
-                color: _t.exitCell.withValues(alpha: 0.75),
-              ),
+              side: BorderSide(color: _t.exitCell.withValues(alpha: 0.75)),
             ),
           ),
           const SizedBox(width: 12),
@@ -276,8 +275,8 @@ class _SurvivalOverlay extends ConsumerWidget {
       const SizedBox(height: 16),
       Text(
         survival.phase == SurvivalPhase.success
-            ? '¡Registro guardado!'
-            : '¡Tiempo Agotado!',
+            ? l.survivalScoreSaved
+            : l.survivalTimeUp,
         textAlign: TextAlign.center,
         style: const TextStyle(
           color: Colors.white,
@@ -287,7 +286,7 @@ class _SurvivalOverlay extends ConsumerWidget {
       ),
       const SizedBox(height: 8),
       Text(
-        'Tableros resueltos: ${survival.boardsCleared}',
+        l.survivalResultBoardsSolved(survival.boardsCleared),
         textAlign: TextAlign.center,
         style: TextStyle(
           color: Colors.white.withValues(alpha: 0.85),
@@ -300,7 +299,7 @@ class _SurvivalOverlay extends ConsumerWidget {
       children.addAll([
         const SizedBox(height: 8),
         Text(
-          'Puntaje no guardado. Inicia sesión para entrar al ranking.',
+          l.survivalScoreNotSaved,
           textAlign: TextAlign.center,
           style: TextStyle(
             color: Colors.white.withValues(alpha: 0.62),

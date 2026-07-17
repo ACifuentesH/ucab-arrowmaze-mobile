@@ -78,7 +78,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
     if (!(_formKey.currentState?.validate() ?? false)) return;
 
     final l10n = AppLocalizations.of(context)!;
-    await ref.read(authViewModelProvider.notifier).register(
+    await ref
+        .read(authViewModelProvider.notifier)
+        .register(
           username: _usernameController.text,
           email: _emailController.text,
           password: _passwordController.text,
@@ -89,6 +91,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
   @override
   Widget build(BuildContext context) {
     final auth = ref.watch(authViewModelProvider);
+    final l = AppLocalizations.of(context)!;
 
     ref.listen(authViewModelProvider, (previous, next) {
       if (next.status == AuthStatus.authenticated && context.mounted) {
@@ -102,7 +105,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         foregroundColor: _t.hudText,
-        title: const Text('Crear cuenta'),
+        title: Text(l.registerTitle),
         centerTitle: true,
       ),
       body: SafeArea(
@@ -132,7 +135,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                         ),
                         const SizedBox(height: 12),
                         Text(
-                          'Completa tus datos para registrarte',
+                          l.registerSubtitle,
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 14,
@@ -140,7 +143,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                           ),
                         ),
                         const SizedBox(height: 40),
-                        const _SectionLabel('Username'),
+                        _SectionLabel(l.usernameLabel),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _usernameController,
@@ -155,15 +158,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             }
                           },
                           decoration: _inputDecoration(
-                            hintText: 'tu_usuario',
+                            hintText: l.usernameHint,
                             showHint: !_usernameFocused,
                             prefixIcon: Icons.person_outline,
                           ),
                           validator: (value) {
                             final trimmed = value?.trim() ?? '';
-                            if (trimmed.isEmpty) return 'Ingresa un username';
+                            if (trimmed.isEmpty) return l.usernameRequired;
                             if (trimmed.length < 3 || trimmed.length > 30) {
-                              return 'El username debe tener entre 3 y 30 caracteres';
+                              return l.usernameLengthValidation;
                             }
                             return null;
                           },
@@ -172,7 +175,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               .clearError(),
                         ),
                         const SizedBox(height: 20),
-                        const _SectionLabel('Email'),
+                        _SectionLabel(l.emailLabel),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _emailController,
@@ -187,15 +190,15 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                             }
                           },
                           decoration: _inputDecoration(
-                            hintText: 'tu@email.com',
+                            hintText: l.emailHint,
                             showHint: !_emailFocused,
                             prefixIcon: Icons.mail_outline,
                           ),
                           validator: (value) {
                             final trimmed = value?.trim() ?? '';
-                            if (trimmed.isEmpty) return 'Ingresa tu correo';
+                            if (trimmed.isEmpty) return l.emailRequired;
                             if (!trimmed.contains('@')) {
-                              return 'Correo electrónico inválido';
+                              return l.emailInvalid;
                             }
                             return null;
                           },
@@ -204,7 +207,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               .clearError(),
                         ),
                         const SizedBox(height: 20),
-                        const _SectionLabel('Password'),
+                        _SectionLabel(l.passwordLabel),
                         const SizedBox(height: 8),
                         TextFormField(
                           controller: _passwordController,
@@ -230,17 +233,17 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               onPressed: auth.isLoading
                                   ? null
                                   : () => setState(
-                                        () => _obscurePassword =
-                                            !_obscurePassword,
-                                      ),
+                                      () =>
+                                          _obscurePassword = !_obscurePassword,
+                                    ),
                             ),
                           ),
                           validator: (value) {
                             if (value == null || value.isEmpty) {
-                              return 'Ingresa tu contraseña';
+                              return l.passwordRequired;
                             }
                             if (value.length < 6) {
-                              return 'La contraseña debe tener al menos 6 caracteres';
+                              return l.passwordMinLengthValidation;
                             }
                             return null;
                           },
@@ -272,8 +275,9 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                               style: FilledButton.styleFrom(
                                 backgroundColor: _t.primary,
                                 foregroundColor: _t.onPrimary,
-                                disabledBackgroundColor:
-                                    _t.primary.withValues(alpha: 0.5),
+                                disabledBackgroundColor: _t.primary.withValues(
+                                  alpha: 0.5,
+                                ),
                                 textStyle: const TextStyle(
                                   fontSize: 16,
                                   fontWeight: FontWeight.bold,
@@ -292,7 +296,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                         color: Colors.white,
                                       ),
                                     )
-                                  : const Text('REGISTRARSE'),
+                                  : Text(l.registerSubmitButton),
                             ),
                           ),
                           const SizedBox(height: 16),
@@ -301,7 +305,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
                                 ? null
                                 : () => Navigator.of(context).pop(),
                             child: Text(
-                              '¿Ya tienes cuenta? Inicia sesión',
+                              l.registerLoginLink,
                               style: TextStyle(
                                 color: _t.primary.withValues(alpha: 0.9),
                                 fontSize: 14,
@@ -340,9 +344,7 @@ class _RegisterScreenState extends ConsumerState<RegisterScreen> {
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
-        borderSide: BorderSide(
-          color: _t.hudText.withValues(alpha: 0.1),
-        ),
+        borderSide: BorderSide(color: _t.hudText.withValues(alpha: 0.1)),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
@@ -366,9 +368,9 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       text,
       style: Theme.of(context).textTheme.titleSmall?.copyWith(
-            fontWeight: FontWeight.w600,
-            color: ThemeConfig.dark.hudText,
-          ),
+        fontWeight: FontWeight.w600,
+        color: ThemeConfig.dark.hudText,
+      ),
     );
   }
 }

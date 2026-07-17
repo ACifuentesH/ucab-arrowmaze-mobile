@@ -166,5 +166,94 @@ class AppLocalizationsEn extends AppLocalizations {
   String get loginPromptGuestButton => 'Continue as guest';
 
   @override
+  String get loginTitle => 'Log in';
+
+  @override
+  String get loginSubtitle => 'Enter your credentials to continue';
+
+  @override
+  String get emailLabel => 'Email';
+
+  @override
+  String get emailHint => 'you@email.com';
+
+  @override
+  String get passwordLabel => 'Password';
+
+  @override
+  String get emailRequired => 'Enter your email';
+
+  @override
+  String get emailInvalid => 'Invalid email address';
+
+  @override
+  String get passwordRequired => 'Enter your password';
+
+  @override
+  String get loginSubmitButton => 'LOG IN';
+
+  @override
+  String get loginRegisterLink => 'Don\'t have an account? Sign up';
+
+  @override
+  String get registerTitle => 'Create account';
+
+  @override
+  String get registerSubtitle => 'Enter your details to sign up';
+
+  @override
+  String get usernameLabel => 'Username';
+
+  @override
+  String get usernameHint => 'your_username';
+
+  @override
+  String get usernameRequired => 'Enter a username';
+
+  @override
+  String get usernameLengthValidation =>
+      'Username must be between 3 and 30 characters';
+
+  @override
+  String get passwordMinLengthValidation =>
+      'Password must be at least 6 characters';
+
+  @override
+  String get registerSubmitButton => 'SIGN UP';
+
+  @override
+  String get registerLoginLink => 'Already have an account? Log in';
+
+  @override
+  String get survivalExitTitle => 'Quit game?';
+
+  @override
+  String get survivalExitMessage => 'You will lose your progress';
+
+  @override
+  String get cancelButton => 'Cancel';
+
+  @override
+  String get survivalExitButton => 'Quit';
+
+  @override
+  String get survivalExitTooltip => 'Quit game';
+
+  @override
+  String get survivalScoreSaved => 'Score saved!';
+
+  @override
+  String get survivalTimeUp => 'Time\'s up!';
+
+  @override
+  String survivalResultBoardsSolved(int count) {
+    return 'Boards solved: $count';
+  }
+
+  @override
+  String get survivalScoreNotSaved =>
+      'Score not saved. Log in to join the ranking.';
+
+  @override
   String get error_invalid_email => 'The email address format is invalid.';
 }
