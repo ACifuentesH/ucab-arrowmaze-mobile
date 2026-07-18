@@ -84,7 +84,20 @@ class HexLevelSelectScreenTestApi {
   // ── When ───────────────────────────────────────────────────────────────────
 
   Future<HexLevelSelectScreenTestApi> whenHexTileIsTapped(int number) async {
-    await _tester.tap(find.byKey(HexLevelSelectScreen.hexTileKey(number)));
+    final finder = find.byKey(HexLevelSelectScreen.hexTileKey(number));
+    // Los nodos bajos del sendero pueden quedar fuera del viewport de test.
+    await _tester.ensureVisible(finder);
+    await _tester.pumpAndSettle();
+    await _tester.tap(finder, warnIfMissed: false);
+    await _tester.pumpAndSettle();
+    return this;
+  }
+
+  Future<HexLevelSelectScreenTestApi> whenComingSoonNodeIsTapped() async {
+    final finder = find.byKey(HexLevelSelectScreen.comingSoonTileKey);
+    await _tester.ensureVisible(finder);
+    await _tester.pumpAndSettle();
+    await _tester.tap(finder, warnIfMissed: false);
     await _tester.pumpAndSettle();
     return this;
   }
@@ -104,4 +117,10 @@ class HexLevelSelectScreenTestApi {
         find.byKey(HexLevelSelectScreen.hexTileKey(number)),
         findsOneWidget,
       );
+
+  /// El nodo teaser "en construcción" al final del sendero.
+  void thenTheComingSoonNodeShouldBeShown() {
+    expect(find.byKey(HexLevelSelectScreen.comingSoonTileKey), findsOneWidget);
+    expect(find.byIcon(Icons.construction), findsOneWidget);
+  }
 }
