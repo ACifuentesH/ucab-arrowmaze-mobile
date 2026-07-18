@@ -635,6 +635,26 @@
 
 ---
 
+### Entry 031 — feature/hex-mode-ui: hex_3 "Enjambre" (nivel gigante) y sendero de campaña hex con nodo "próximamente"
+
+**Task:** Dos ampliaciones sobre la misma rama: (1) un TERCER nivel hexagonal muchísimo más difícil que Colmena — tablero gigante, ~2× flechas, fuertemente entrelazadas — generado por construcción inversa; (2) rediseñar `HexLevelSelectScreen` para que se vea como la campaña cuadrada (sendero de nodos circulares serpenteantes) con un nodo teaser "PRÓXIMAMENTE" en construcción al final del camino.
+
+**Prompt (paraphrase):** "Crea `hex_3.json` 'Enjambre' (~90-110 celdas con hueco interior, 20-24 flechas de 3-7 celdas, ≥15 bloqueadas al inicio con cadenas profundas, `lives: 3`, `timeLimitSeconds: 480`, `parMoves` = nº flechas) con el MÉTODO de la fase 2B: script auxiliar de construcción inversa (cada flecha colocada debe escapar sobre la ocupación ya presente; monotonía ⇒ resoluble por construcción), respetando la tabla odd-r. Añádelo a `hex_manifest.json`; amplía el test de resolubilidad (≥90 celdas, ≥15 bloqueadas). Rediseña la pantalla hex como `_CampaignTrail` (extraer compartido o espejar — decide y justifica) con barra de progreso y nodo final 'próximamente' (`Icons.construction`, no tappeable, `Key('hex_coming_soon_tile')`, i18n `hexComingSoon`). Ajusta los tests que asuman 2 niveles; campaña original intacta."
+
+**Result obtained:**
+
+- **hex_3 "Enjambre" — generado, no dibujado:** script Dart auxiliar (scratchpad) que replica la tabla odd-r y la regla de escape del solver, y coloca flechas por construcción inversa con dos refinamientos descubiertos iterando: (a) **sesgo de rayo** — los paseos aleatorios prefieren arrancar/pisar celdas de los rayos de escape de las flechas aún escapables, porque ocupar un rayo es exactamente lo que bloquea; (b) **prohibir flechas imbloqueables** — un candidato cuya cabeza apunta directo al borde (rayo de 0 celdas dentro del tablero) queda escapable PARA SIEMPRE y mata la dificultad, así que se exige rayo ≥1 (con fallback solo en las últimas colocadas, que nacen escapables por diseño); además, enumeración exhaustiva DFS de caminos cortos cuando el tablero se satura (el muestreo aleatorio falla por fragmentación). Barrido de 300 seeds → seed 40: **110 celdas** (hexágono filas 0-10 con hueco interior de 3 celdas), **24 flechas** (18×3 y 6×6 celdas, 90 celdas ocupadas), **18/24 bloqueadas al inicio**, opciones del greedy por paso `[6,7,9,8,8,7,6,6,6,5,4,3,2,2,2,2,1,1,1,1,1,1,1,1]` — los últimos 8 movimientos son forzados (cadena única). Verificado por el gate real: `LevelBuilder` + `GreedyBoardSolver` de producción en `hex_levels_test.dart`.
+- Manifest → `["hex_1","hex_2","hex_3"]`; la progresión secuencial existente deja hex_3 bloqueado hasta completar hex_2 sin ningún cambio de código.
+- **Sendero hex:** `HexLevelSelectScreen` rediseñada como espejo del `_CampaignTrail` cuadrado (onda senoidal, nodos círculo con candado/número/check + estrellas, marcador "estás aquí", camino sólido/punteado, barra de progreso) con acento ámbar, SIN botón de leaderboard por nodo (niveles locales) y con **nodo final "próximamente"**: círculo apagado de borde discontinuo (painter propio), `Icons.construction`, etiqueta i18n `hexComingSoon`, no tappeable, `Key('hex_coming_soon_tile')`; el tramo del camino hacia él se pinta siempre punteado. **Decisión espejo vs. compartido:** espejo propio — el trail original está acoplado a su pantalla (leaderboard, `campaignTileKey`, Testing API) y el requisito exige la campaña cuadrada intacta; extraerlo habría tocado un contrato de tests ajeno para ahorrar ~200 líneas de layout.
+- i18n: `hexComingSoon` ("Coming soon"/"Próximamente") en ambos `.arb` + regeneración.
+- **Tests:** `hex_levels_test.dart` ampliado (manifest de 3, tablero ≥90 celdas y 20-24 flechas, ≥15 bloqueadas — los tests parametrizados de build/resolubilidad cubren hex_3 automáticamente); catálogo hex → 3 niveles; pantalla hex reescrita a 7 tests (3 niveles + candados, nodo próximamente visible y NO navegable, bloqueado no navega, desbloqueado navega, progresión hex_1→hex_2→hex_3). Suite completa **337/337**; `flutter analyze` **72 issues** (baseline exacto, cero nuevos).
+
+**Team modifications:** Pendiente de revisión.
+
+**Lessons learned:** En la construcción inversa la dificultad no viene sola: sin el sesgo de rayo el scoring encontraba pocos bloqueos (8/20 bloqueadas) y sin la regla del rayo ≥1 el nivel se llenaba de flechas apuntando al borde, imbloqueables e inmunes a toda dependencia — el debug por pasos (`escapable/rayCells` por colocación) fue lo que reveló ambas patologías. La otra lección es de límites físicos: 22 flechas × 5 celdas no caben en 99 celdas; presupuestar celdas (longitudes decrecientes según se llena el tablero) y conmutar a enumeración exhaustiva cuando el muestreo aleatorio se fragmenta convirtió un generador que fallaba siempre en uno que produce niveles válidos en cientos de seeds.
+
+---
+
 ## Critical Evaluation
 
 - **Approximate share of AI-assisted code:** ~85% of the lines in this repository were written with AI assistance, under team-defined architecture, contracts and review. All AI-generated code is covered by the test suite.
