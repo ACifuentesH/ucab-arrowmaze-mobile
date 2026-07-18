@@ -1,4 +1,6 @@
 import 'package:arrow_maze/application/builders/level_definition.dart';
+import 'package:arrow_maze/domain/factories/arrow_spec.dart';
+import 'package:arrow_maze/domain/value_objects/topology_kind.dart';
 
 import 'arrow_mother.dart';
 
@@ -91,6 +93,52 @@ class LevelDefinitionMother {
           ArrowMother.eastwardSpec(),
           // Pisa (1,1), ya ocupada por a1.
           ArrowMother.lShapedSpec(id: 'a3'),
+        ],
+      );
+
+  // ── Hexagonal (pointy-top, odd-r) ─────────────────────────────────────────
+
+  /// Nivel hex válido sobre el 3×3:
+  ///   - 'h1' (1,0)→(1,1): apunta E (index 1 de 6).
+  ///   - 'h2' (0,2)→(1,2): desde fila PAR, (r+1,c) es SE (index 2 de 6).
+  static LevelDefinition hexLevel({
+    String id = 'level_hex',
+    int lives = 3,
+  }) =>
+      LevelDefinition(
+        id: id,
+        name: 'Hex Level',
+        lives: lives,
+        topology: TopologyKind.hex,
+        cells: _threeByThree,
+        arrows: const [
+          ArrowSpec(id: 'h1', path: [
+            [1, 0],
+            [1, 1],
+          ], color: '#EF476F'),
+          ArrowSpec(id: 'h2', path: [
+            [0, 2],
+            [1, 2],
+          ], color: '#06D6A0'),
+        ],
+      );
+
+  /// Inválido en hex: el par intermedio (0,0)→(1,1) NO es hex-adyacente desde
+  /// fila PAR (sus vecinos abajo son (1,0) SE y (1,-1) SW). El último segmento
+  /// (1,1)→(1,2) sí es E, así que la fábrica no lo detecta: lo detecta la
+  /// validación por grafo del builder.
+  static LevelDefinition hexWithNonAdjacentArrow() => LevelDefinition(
+        id: 'level_hex_invalid',
+        name: 'Invalid Hex',
+        lives: 3,
+        topology: TopologyKind.hex,
+        cells: _threeByThree,
+        arrows: const [
+          ArrowSpec(id: 'gap', path: [
+            [0, 0],
+            [1, 1],
+            [1, 2],
+          ], color: '#000000'),
         ],
       );
 
