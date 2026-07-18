@@ -19,11 +19,13 @@ void main() {
       expect(previews.every((p) => p.topology == TopologyKind.square), isTrue);
     });
 
-    testWidgets('should_expose_exactly_hex_1_and_hex_2_when_reading_hex_manifest',
+    testWidgets(
+        'should_expose_exactly_the_three_hex_levels_when_reading_hex_manifest',
         (tester) async {
       final previews = await const HexAssetLevelCatalogService().getLevels();
 
-      expect(previews.map((p) => p.id).toList(), equals(['hex_1', 'hex_2']));
+      expect(previews.map((p) => p.id).toList(),
+          equals(['hex_1', 'hex_2', 'hex_3']));
       expect(previews.every((p) => p.topology == TopologyKind.hex), isTrue,
           reason: 'todo nivel del catálogo hex declara topology hex');
     });

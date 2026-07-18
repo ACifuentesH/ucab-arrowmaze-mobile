@@ -37,8 +37,8 @@ void main() {
   }
 
   group('Modo hexagonal — assets/levels', () {
-    test('should_list_exactly_hex_1_and_hex_2_when_manifest_is_read', () {
-      expect(ids, equals(['hex_1', 'hex_2']));
+    test('should_list_exactly_the_three_hex_levels_when_manifest_is_read', () {
+      expect(ids, equals(['hex_1', 'hex_2', 'hex_3']));
     });
 
     for (final id in ids) {
@@ -77,6 +77,21 @@ void main() {
       final board = LevelBuilder().build(load('hex_2'));
       expect(countInitiallyBlocked(board), greaterThanOrEqualTo(6),
           reason: 'hex_2 (hard) exige dependencias encadenadas reales');
+    });
+
+    test('should_have_a_large_board_when_hex_3_is_loaded', () {
+      final definition = load('hex_3');
+      expect(definition.cells.length, greaterThanOrEqualTo(90),
+          reason: 'hex_3 (Enjambre) es el tablero gigante del modo hex');
+      expect(definition.arrows.length, inInclusiveRange(20, 24));
+    });
+
+    test('should_start_with_at_least_fifteen_blocked_arrows_when_hex_3_is_built',
+        () {
+      final board = LevelBuilder().build(load('hex_3'));
+      expect(countInitiallyBlocked(board), greaterThanOrEqualTo(15),
+          reason: 'hex_3 exige que la mayoría de flechas dependa de otras '
+              '(cadenas profundas, orden de resolución casi único)');
     });
   });
 }
