@@ -574,6 +574,27 @@
 
 ---
 
+### Entry 029 — feature/hex-levels-catalog: catálogo, progresión y dos niveles jugables del modo hexagonal
+
+**Task:** Sobre el núcleo hex (Entry 027), añadir contenido y su pipeline de selección AISLADO de la campaña cuadrada: dos niveles hexagonales diseñados a mano (`hex_1` fácil, `hex_2` difícil), un catálogo de assets propio (`hex_manifest.json`), un caso de uso de progresión secuencial hex y su view model, sin tocar ninguna pantalla (otra rama paralela trabaja el rendering).
+
+**Prompt (paraphrase):** "Crea `hex_1.json` (Panal, easy, ~14 celdas, 4 flechas, ≥1 bloqueada) y `hex_2.json` (Colmena, hard, ~40-48 celdas, 10-12 flechas encadenadas, mayoría bloqueadas), su `hex_manifest.json`, un `HexAssetLevelCatalogService`, un `GetHexLevelSelectionUseCase` con la misma regla de desbloqueo secuencial, un `HexLevelSelectViewModel` (sin pantalla) y sus providers. Método obligatorio: escribe primero el test de resolubilidad (solver greedy sobre `Board.tryRemoveArrow(applyLifePenalty:false)`) y diseña los niveles iterando contra él. Suite completa verde, campaña cuadrada intacta (15 niveles), sin push."
+
+**Result obtained:**
+
+- **Niveles diseñados con solver, no "a ojo":** repliqué la geometría odd-r y el solver greedy en un script Dart auxiliar y construí `hex_2` por *construcción inversa* (colocar cada flecha de modo que escape sobre la ocupación ya presente ⇒ resolubilidad garantizada por monotonía del juego, y muchas flechas quedan bloqueadas en el estado inicial completo). Ambos niveles verificados después contra el `LevelBuilder` REAL y el `GreedyBoardSolver` real en los tests.
+  - `hex_1` "Panal": 14 celdas (hexágono compacto filas 0-3), 4 flechas de 2-3 celdas, **3 bloqueadas al inicio**, `lives: 5`, sin tiempo, `parMoves: 4`. Orden greedy: a3 → a2 → a1 → a4.
+  - `hex_2` "Colmena": 41 celdas (silueta hexagonal filas 0-6), 11 flechas de 3-5 celdas con dobleces, **8 bloqueadas al inicio**, `lives: 3`, `timeLimitSeconds: 240`, `parMoves: 11`. Orden greedy: h1 … h11.
+- `HexAssetLevelCatalogService` (gemelo de `AssetLevelCatalogService` sobre `hex_manifest.json`) y `GetHexLevelSelectionUseCase` (misma regla secuencial que la campaña) sobre el repositorio de progreso único; los ids hex no colisionan con los cuadrados.
+- `HexLevelSelectViewModel` reutiliza `LevelSelectState` (agnóstico a la topología: opera sobre `LevelSelectEntry`). Providers `hexLevelCatalogServiceProvider`, `getHexLevelSelectionUseCaseProvider` y `hexLevelSelectViewModelProvider` registrados en `providers.dart` (único cambio fuera de application/infrastructure/assets/tests).
+- **Tests: 13 nuevos** (resolubilidad greedy + topología hex + conteo de flechas bloqueadas de ambos niveles; progresión hex del use case: hex_2 locked / unlocked / ambos completed; AISLAMIENTO de catálogos: el manifest cuadrado nunca expone niveles hex y el hex expone exactamente hex_1+hex_2 con `topology == hex`; view model hex). Suite completa **304/304** (antes 291). `flutter analyze`: **72 issues** = 69 del baseline + 3 clones inevitables de `prefer_initializing_formals` (info) al espejar los constructores de API pública de sus gemelos cuadrados; cero warnings/errors nuevos. La campaña cuadrada sigue con sus 15 niveles verdes e intacta.
+
+**Team modifications:** Pendiente de revisión.
+
+**Lessons learned:** Diseñar niveles "a ojo" en una malla hexagonal odd-r es una trampa: la paridad de fila cambia los vecinos y es fácil producir un path no adyacente o un bloqueo circular irresoluble. La construcción inversa (cada flecha debe poder escapar sobre lo ya colocado) convierte la resolubilidad en un invariante del propio proceso de generación en vez de en algo que se comprueba a posteriori, y de paso maximiza las dependencias iniciales — justo la métrica de dificultad. El script auxiliar solo *diseña*; el gate real es el test que reconstruye con el `LevelBuilder` y el solver de producción. Reutilizar `LevelSelectState` para el VM hex evitó duplicar estado sin ninguna coacción: el estado ya era agnóstico a la forma del tablero.
+
+---
+
 ## Critical Evaluation
 
 - **Approximate share of AI-assisted code:** ~85% of the lines in this repository were written with AI assistance, under team-defined architecture, contracts and review. All AI-generated code is covered by the test suite.
