@@ -1,13 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:arrow_maze/domain/entities/arrow.dart';
 import 'package:arrow_maze/domain/value_objects/cell_id.dart';
+import 'package:arrow_maze/presentation/views/widgets/board_geometry.dart';
 
 /// CustomPainter del tablero:
 ///   - Fondo oscuro + punto pequeño por cada celda (la flecha los tapa)
 ///   - Flechas delgadas con punta V abierta
 ///   - Escape: el cuerpo recorre su propio camino y sale del tablero
 ///   - Bloqueada: shake horizontal
+///
+/// Toda la matemática de píxeles (centros, contornos, direcciones, distancias,
+/// hit-test) se delega en [geometry]: el mismo pintor sirve para tableros
+/// cuadrados y hexagonales cambiando solo la geometría inyectada.
 class BoardPainter extends CustomPainter {
+  final IBoardGeometry geometry;
   final int boundingRows;
   final int boundingCols;
   final Set<CellId> existingCells;
@@ -17,15 +23,8 @@ class BoardPainter extends CustomPainter {
   final String? blockedArrowId;
   final double shakeOffsetX;
 
-  // N=0, E=1, S=2, O=3
-  static const List<Offset> _dir = [
-    Offset(0, -1),
-    Offset(1,  0),
-    Offset(0,  1),
-    Offset(-1, 0),
-  ];
-
   const BoardPainter({
+    required this.geometry,
     required this.boundingRows,
     required this.boundingCols,
     required this.existingCells,
@@ -40,7 +39,14 @@ class BoardPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final cs = size.width / boundingCols; // cell size (siempre cuadrada)
+    // Escala de celda coherente con el tamaño reservado por BoardView. Para el
+    // tablero cuadrado equivale exactamente al viejo `size.width / cols`.
+    final cs = geometry.cellScaleFor(
+      size.width,
+      size.height,
+      boundingRows,
+      boundingCols,
+    );
 
     canvas.clipRect(Offset.zero & size);
     _drawBackground(canvas, cs);
@@ -75,7 +81,7 @@ class BoardPainter extends CustomPainter {
     for (final id in existingCells) {
       final rc = _parseId(id.value);
       if (rc == null) continue;
-      path.addRect(Rect.fromLTWH(rc.$2 * cs, rc.$1 * cs, cs, cs));
+      path.addPath(geometry.cellOutline(rc.$1, rc.$2, cs), Offset.zero);
     }
     canvas.drawPath(path, Paint()..color = const Color(0xFF232328));
   }
@@ -86,7 +92,7 @@ class BoardPainter extends CustomPainter {
     for (final id in existingCells) {
       final rc = _parseId(id.value);
       if (rc == null) continue;
-      canvas.drawCircle(_center(rc.$1, rc.$2, cs), r, paint);
+      canvas.drawCircle(geometry.cellCenter(rc.$1, rc.$2, cs), r, paint);
     }
   }
 
@@ -118,13 +124,15 @@ class BoardPainter extends CustomPainter {
   void _drawEscaping(Canvas canvas, Arrow arrow, double cs, double t) {
     final base = _baseCenters(arrow, cs);
     final n = base.length;
-    final d = _dir[arrow.headDirection.index];
+    final d = geometry.directionVector(arrow.headDirection.index);
+    final step = geometry.stepDistance(cs);
 
-    // Camino extendido: n puntos extra en dirección de la punta
+    // Camino extendido: n puntos extra en dirección de la punta, separados la
+    // distancia real entre vecinas (uniforme por topología).
     final ext = [...base];
     for (int i = 1; i <= n; i++) {
-      ext.add(Offset(base.last.dx + d.dx * i * cs,
-                     base.last.dy + d.dy * i * cs));
+      ext.add(Offset(base.last.dx + d.dx * i * step,
+          base.last.dy + d.dy * i * step));
     }
 
     final advance = t * n;
@@ -163,13 +171,14 @@ class BoardPainter extends CustomPainter {
   }
 
   /// Geometría de la punta V (apex + dos alas) para una cabeza en [tip] que
-  /// apunta hacia [dirIndex]. Función pura y determinista (testeable).
-  static ({Offset apex, Offset left, Offset right}) _headPoints(
+  /// apunta hacia [dirIndex]. El vector de dirección lo provee la geometría
+  /// (unitario), por lo que sirve igual en cuadrado y en hex.
+  ({Offset apex, Offset left, Offset right}) _headPoints(
     Offset tip,
     int dirIndex,
     double cs,
   ) {
-    final d = _dir[dirIndex];
+    final d = geometry.directionVector(dirIndex);
     final perp = Offset(-d.dy, d.dx);
     final sz = cs * 0.30;
 
@@ -205,14 +214,10 @@ class BoardPainter extends CustomPainter {
 
   // ── helpers ───────────────────────────────────────────────────────────────────
 
-  List<Offset> _baseCenters(Arrow arrow, double cs) =>
-      arrow.path.map((id) {
+  List<Offset> _baseCenters(Arrow arrow, double cs) => arrow.path.map((id) {
         final rc = _parseId(id.value)!;
-        return _center(rc.$1, rc.$2, cs);
+        return geometry.cellCenter(rc.$1, rc.$2, cs);
       }).toList();
-
-  Offset _center(int r, int c, double cs) =>
-      Offset((c + 0.5) * cs, (r + 0.5) * cs);
 
   /// Niveles generados con IA pueden traer el color como nombre CSS
   /// ("crimson", "hotpink"...) en vez de hex — el modelo no siempre respeta
@@ -259,6 +264,7 @@ class BoardPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(BoardPainter old) =>
+      old.geometry != geometry ||
       old.boundingRows != boundingRows ||
       old.boundingCols != boundingCols ||
       old.existingCells != existingCells ||

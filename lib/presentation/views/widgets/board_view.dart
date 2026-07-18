@@ -1,10 +1,11 @@
-import 'dart:math' show min;
-
 import 'package:flutter/material.dart';
 import 'package:arrow_maze/domain/aggregates/board.dart';
 import 'package:arrow_maze/domain/entities/arrow.dart';
 import 'package:arrow_maze/domain/value_objects/cell_id.dart';
+import 'package:arrow_maze/domain/value_objects/topology_kind.dart';
+import 'package:arrow_maze/presentation/views/widgets/board_geometry.dart';
 import 'package:arrow_maze/presentation/views/widgets/board_painter.dart';
+import 'package:arrow_maze/presentation/views/widgets/hex_board_geometry.dart';
 
 /// Renderiza el tablero completo con CustomPainter.
 /// Gestiona animaciones de escape y shake internamente via didUpdateWidget.
@@ -100,23 +101,32 @@ class _BoardViewState extends State<BoardView>
 
     final existingCells = board.graph.allNodes.map((n) => n.id).toSet();
 
+    // La forma topológica del tablero decide toda la matemática de píxeles.
+    final IBoardGeometry geometry = switch (board.topologyKind) {
+      TopologyKind.square => const SquareBoardGeometry(),
+      TopologyKind.hex => const HexBoardGeometry(),
+    };
+
     return LayoutBuilder(
       builder: (context, constraints) {
-        // Celda cuadrada: usa el menor de los dos ejes para no deformar la forma.
-        final cellSize = min(
-          constraints.maxWidth / cols,
-          constraints.maxHeight / rows,
+        // Escala de celda que cabe en ambos ejes sin deformar la forma.
+        final cellSize = geometry.cellScaleFor(
+          constraints.maxWidth,
+          constraints.maxHeight,
+          rows,
+          cols,
         );
-        final boardW = cellSize * cols;
-        final boardH = cellSize * rows;
+        final size = geometry.boardSize(rows, cols, cellSize);
+        final boardW = size.width;
+        final boardH = size.height;
 
         return Center(
           child: GestureDetector(
             onTapDown: (d) {
               // localPosition es relativo al SizedBox del tablero (no al canvas completo).
-              final c = (d.localPosition.dx / cellSize).floor();
-              final r = (d.localPosition.dy / cellSize).floor();
-              if (r < 0 || r >= rows || c < 0 || c >= cols) return;
+              final hit = geometry.hitTest(d.localPosition, cellSize, rows, cols);
+              if (hit == null) return;
+              final (r, c) = hit;
               final arrowId = board.arrowAt(CellId('r${r}c$c'))?.id;
               if (arrowId != null) widget.onTapArrow(arrowId);
             },
@@ -127,6 +137,7 @@ class _BoardViewState extends State<BoardView>
                 animation: Listenable.merge([_escapeCtrl, _shakeCtrl]),
                 builder: (_, __) => CustomPaint(
                   painter: BoardPainter(
+                    geometry: geometry,
                     boundingRows: rows,
                     boundingCols: cols,
                     existingCells: existingCells,
