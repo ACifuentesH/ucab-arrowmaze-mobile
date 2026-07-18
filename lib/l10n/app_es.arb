@@ -41,6 +41,7 @@
   "hexModeButton": "Modo Hexagonal",
   "hexModeTitle": "Modo Hexagonal",
   "hexModeSubtitle": "Tableros de panal: las flechas escapan en 6 direcciones.",
+  "hexComingSoon": "Próximamente",
   "accountTooltip": "Cuenta",
   "loginButton": "Login",
   "logoutButton": "CERRAR SESIÓN",

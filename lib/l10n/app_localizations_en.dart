@@ -146,6 +146,9 @@ class AppLocalizationsEn extends AppLocalizations {
       'Honeycomb boards: arrows escape through 6 directions.';
 
   @override
+  String get hexComingSoon => 'Coming soon';
+
+  @override
   String get accountTooltip => 'Account';
 
   @override

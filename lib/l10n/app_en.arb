@@ -183,6 +183,10 @@
   "@hexModeSubtitle": {
     "description": "Short note explaining the hexagonal mechanic (arrows have 6 exit directions)"
   },
+  "hexComingSoon": "Coming soon",
+  "@hexComingSoon": {
+    "description": "Label of the under-construction teaser node at the end of the hex campaign trail"
+  },
   "accountTooltip": "Account",
   "@accountTooltip": {
     "description": "Tooltip of the account icon on the home screen"

@@ -344,6 +344,12 @@ abstract class AppLocalizations {
   /// **'Honeycomb boards: arrows escape through 6 directions.'**
   String get hexModeSubtitle;
 
+  /// Label of the under-construction teaser node at the end of the hex campaign trail
+  ///
+  /// In en, this message translates to:
+  /// **'Coming soon'**
+  String get hexComingSoon;
+
   /// Tooltip of the account icon on the home screen
   ///
   /// In en, this message translates to:

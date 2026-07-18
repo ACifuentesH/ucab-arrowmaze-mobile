@@ -146,6 +146,9 @@ class AppLocalizationsEs extends AppLocalizations {
       'Tableros de panal: las flechas escapan en 6 direcciones.';
 
   @override
+  String get hexComingSoon => 'Próximamente';
+
+  @override
   String get accountTooltip => 'Cuenta';
 
   @override
