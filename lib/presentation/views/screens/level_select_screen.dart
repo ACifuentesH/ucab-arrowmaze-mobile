@@ -11,6 +11,7 @@ import 'package:arrow_maze/config/theme_config.dart';
 import 'package:arrow_maze/l10n/app_localizations.dart';
 import 'package:arrow_maze/presentation/views/screens/game_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/generate_level_screen.dart';
+import 'package:arrow_maze/presentation/views/screens/hex_level_select_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/leaderboard_screen.dart';
 import 'package:arrow_maze/presentation/views/screens/login_screen.dart';
 
@@ -69,6 +70,15 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
     if (mounted) ref.read(levelSelectViewModelProvider.notifier).load();
   }
 
+  /// Modo hexagonal: niveles LOCALES (assets), no exige sesión — a diferencia
+  /// del creativo, aquí no hay generación contra el backend.
+  void _goToHexMode() {
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (_) => const HexLevelSelectScreen()),
+    );
+  }
+
   void _openLeaderboard(String levelId) {
     Navigator.push(
       context,
@@ -122,6 +132,12 @@ class _LevelSelectScreenState extends ConsumerState<LevelSelectScreen> {
                   theme: _t,
                   label: l.creativeButton,
                   onTap: _goToCreative,
+                ),
+                const SizedBox(height: 12),
+                _HexModeButton(
+                  theme: _t,
+                  label: l.hexModeButton,
+                  onTap: _goToHexMode,
                 ),
                 const SizedBox(height: 24),
                 _SectionTitle(l.campaignSection, theme: _t),
@@ -227,6 +243,60 @@ class _CreativeButton extends StatelessWidget {
                 ),
               ),
               Icon(Icons.chevron_right, color: theme.primary),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// CTA para abrir el MODO HEXAGONAL. Espejo visual de [_CreativeButton] con un
+/// color propio (ámbar/miel `exitCell`, acorde al panal) e icono hexagonal.
+/// A diferencia del creativo NO exige login: los niveles hex son locales.
+class _HexModeButton extends StatelessWidget {
+  final ThemeConfig theme;
+  final String label;
+  final VoidCallback onTap;
+
+  const _HexModeButton({
+    required this.theme,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final accent = theme.exitCell;
+    return Material(
+      key: const Key('level_select_hex_button'),
+      color: accent.withValues(alpha: 0.12),
+      borderRadius: BorderRadius.circular(14),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(14),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(14),
+            border: Border.all(color: accent.withValues(alpha: 0.5)),
+          ),
+          child: Row(
+            children: [
+              Icon(Icons.hexagon, color: accent, size: 20),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Text(
+                  label,
+                  style: TextStyle(
+                    color: theme.hudText,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 15,
+                    letterSpacing: 1,
+                  ),
+                ),
+              ),
+              Icon(Icons.chevron_right, color: accent),
             ],
           ),
         ),

@@ -91,4 +91,26 @@ void main() {
       api.thenTheGameScreenShouldBeShown();
     });
   });
+
+  group('LevelSelectScreen — hexagonal mode', () {
+    testWidgets('should_show_the_hex_mode_button', (tester) async {
+      final api = LevelSelectScreenTestApi(tester);
+      api.givenACampaignLevel('level_1');
+      await api.givenTheLevelSelectScreenIsOpen();
+
+      api.thenTheHexModeButtonShouldBeShown();
+    });
+
+    testWidgets(
+        'should_navigate_to_hex_screen_when_hex_button_is_tapped',
+        (tester) async {
+      final api = LevelSelectScreenTestApi(tester);
+      api.givenACampaignLevel('level_1');
+      await api.givenTheLevelSelectScreenIsOpen();
+
+      await api.whenHexModeButtonIsTapped();
+
+      api.thenTheHexScreenShouldBeShown();
+    });
+  });
 }
