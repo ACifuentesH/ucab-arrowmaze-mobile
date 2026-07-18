@@ -649,9 +649,25 @@
 - i18n: `hexComingSoon` ("Coming soon"/"Próximamente") en ambos `.arb` + regeneración.
 - **Tests:** `hex_levels_test.dart` ampliado (manifest de 3, tablero ≥90 celdas y 20-24 flechas, ≥15 bloqueadas — los tests parametrizados de build/resolubilidad cubren hex_3 automáticamente); catálogo hex → 3 niveles; pantalla hex reescrita a 7 tests (3 niveles + candados, nodo próximamente visible y NO navegable, bloqueado no navega, desbloqueado navega, progresión hex_1→hex_2→hex_3). Suite completa **337/337**; `flutter analyze` **72 issues** (baseline exacto, cero nuevos).
 
-**Team modifications:** Pendiente de revisión.
+**Team modifications:** Ver Entry 032 — al jugarlo en Chrome el equipo pidió quitar el hueco interior y ajustar el layout del sendero; ambos cambios se hicieron sobre esta misma entrega antes del PR.
 
 **Lessons learned:** En la construcción inversa la dificultad no viene sola: sin el sesgo de rayo el scoring encontraba pocos bloqueos (8/20 bloqueadas) y sin la regla del rayo ≥1 el nivel se llenaba de flechas apuntando al borde, imbloqueables e inmunes a toda dependencia — el debug por pasos (`escapable/rayCells` por colocación) fue lo que reveló ambas patologías. La otra lección es de límites físicos: 22 flechas × 5 celdas no caben en 99 celdas; presupuestar celdas (longitudes decrecientes según se llena el tablero) y conmutar a enumeración exhaustiva cuando el muestreo aleatorio se fragmenta convirtió un generador que fallaba siempre en uno que produce niveles válidos en cientos de seeds.
+
+### Entry 032 — feature/hex-mode-ui: correcciones tras probar la app (silueta maciza + layout del sendero)
+
+**Task:** El modo hexagonal se corrió por primera vez de punta a punta en Chrome (`flutter run -d chrome`) tras integrar las 4 fases en `develop`. El playtesting reveló tres defectos que ningún test detecta porque son de forma/diseño visual, no de lógica: (1) el hueco interior de "Enjambre" se veía mal en un tablero que debía leerse como un panal macizo; (2) el marcador "JUGAR" del nivel actual chocaba con la barra de progreso cuando el nivel activo era el primero del sendero; (3) la línea punteada que cruza el nodo "Próximamente" no se veía centrada en el círculo.
+
+**Prompt (paraphrase):** "No me gusta que el nivel tenga un hueco en medio del tablero, acomódalo" → luego, en la misma corrida: "acomoda un poco el selector para que la etiqueta de jugar del primer nivel no colisione con la barra de progreso de los niveles, y el círculo final de próximamente ruédalo un poco para la izquierda para que esté más centrada la línea punteada que lo atraviesa."
+
+**Result obtained:**
+- **hex_3 regenerado con silueta maciza:** mismo script de construcción inversa de la Entry 031, ahora sobre un hexágono de 102 celdas SIN hueco (filas 0-10, anchos 7..12..7). El primer barrido (300 semillas) dio 21 flechas / 14 bloqueadas — por debajo del mínimo de 15 — así que se amplió a 1500 semillas; la seed 508 ganó con **21 flechas, 16 bloqueadas al inicio** y **14 movimientos finales forzados** (cadena única más larga que la versión con hueco). Verificado de nuevo contra `LevelBuilder` + `GreedyBoardSolver` reales.
+- **Layout del sendero:** `_HexTrail._topPad` 44→100 — el marcador "estás aquí/JUGAR" se dibuja 76 px por encima del centro de su nodo (`_sizeCurrent/2 + 34`), así que con el margen superior original invadía la barra de progreso cuando el nodo actual era el primero; el nuevo margen lo mantiene dentro de la caja del propio sendero.
+- **Nodo "Próximamente" recentrado:** nueva constante `_comingSoonShiftLeft = 24`, aplicada al centro ya calculado del último nodo (no solo al círculo): como la línea del camino se dibuja hasta ese mismo punto ajustado, sigue terminando exactamente en el centro del círculo, solo que el conjunto (círculo + línea) se corrió a la izquierda.
+- Cambios aplicados directamente por el orquestador (sin nuevo subagente: eran ajustes puntuales y ya se conocía el archivo exacto) sobre `feature/hex-mode-ui`. `flutter analyze`: 72 issues (baseline, cero nuevos). `flutter test`: **337/337** verdes tras los tres cambios.
+
+**Team modifications:** Ninguna adicional — esta entrada ES la corrección pedida por el equipo tras jugar la build real.
+
+**Lessons learned:** Los tests de resolubilidad y de widgets no habrían detectado ninguno de los tres defectos: son de gusto visual (el hueco) y de composición de layout (colisión de dos elementos que individualmente están bien posicionados). Correr la app de verdad después de integrar las fases — no solo `flutter test` en verde — fue lo que expuso los tres problemas en un solo intento de juego. Ampliar el barrido de semillas (300→1500) para recuperar una dificultad equivalente tras cambiar la restricción de forma confirma que el generador es sensible a la silueta: no toda semilla-ganadora en un hexágono con hueco gana también en uno macizo.
 
 ---
 
