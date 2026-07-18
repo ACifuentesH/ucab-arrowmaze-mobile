@@ -1,4 +1,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <!-- Required at runtime for release/profile builds: the debug-only
+         manifest's INTERNET permission (added for hot reload) does NOT
+         carry over to `flutter build apk`. Without this, every network
+         call — including the backend at ApiConfig.baseUrl — fails DNS
+         resolution with "Failed host lookup", not a clearer permission
+         error, because Android blocks socket-level DNS for apps lacking
+         this permission. -->
+    <uses-permission android:name="android.permission.INTERNET"/>
     <application
         android:label="arrow_maze"
         android:name="${applicationName}"
