@@ -195,13 +195,19 @@ class _HexTrail extends StatelessWidget {
     required this.onTapLevel,
   });
 
-  // Geometría del sendero (idéntica a la campaña cuadrada).
+  // Geometría del sendero (idéntica a la campaña cuadrada salvo _topPad: aquí
+  // es mayor para que el marcador "JUGAR" del primer nivel — que se dibuja
+  // por encima de su nodo — no invada la barra de progreso de arriba).
   static const double _vSpacing = 118;
-  static const double _topPad = 44;
+  static const double _topPad = 100;
   static const double _bottomPad = 20;
   static const double _sizeCurrent = 84;
   static const double _sizeCompleted = 72;
   static const double _sizeLocked = 58;
+
+  /// Corrimiento adicional a la izquierda del nodo "próximamente" para que la
+  /// línea punteada que lo atraviesa quede mejor centrada en el círculo.
+  static const double _comingSoonShiftLeft = 24;
 
   double _nodeSize(LevelStatus status, bool isCurrent) {
     if (isCurrent) return _sizeCurrent;
@@ -231,6 +237,13 @@ class _HexTrail extends StatelessWidget {
               _topPad + i * _vSpacing,
             ),
         ];
+        // El nodo "próximamente" se corre un poco más a la izquierda; el
+        // painter dibuja la línea hasta este mismo punto ajustado, así que
+        // sigue terminando exactamente en el centro del círculo.
+        centers[centers.length - 1] = Offset(
+          centers.last.dx - _comingSoonShiftLeft,
+          centers.last.dy,
+        );
 
         final height =
             _topPad + (totalNodes - 1) * _vSpacing + _bottomPad + 40;
