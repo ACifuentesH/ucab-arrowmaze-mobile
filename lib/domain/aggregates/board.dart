@@ -5,6 +5,7 @@ import 'package:arrow_maze/domain/value_objects/direction.dart';
 import 'package:arrow_maze/domain/value_objects/move_count.dart';
 import 'package:arrow_maze/domain/value_objects/level_id.dart';
 import 'package:arrow_maze/domain/value_objects/lives.dart';
+import 'package:arrow_maze/domain/value_objects/topology_kind.dart';
 import 'package:arrow_maze/domain/ports/i_board_graph.dart';
 import 'package:arrow_maze/domain/events/domain_events.dart';
 import 'package:arrow_maze/domain/game_status.dart';
@@ -33,6 +34,10 @@ class Board {
   /// Tiempo límite del nivel en segundos; null = sin límite.
   final int? timeLimitSeconds;
 
+  /// Forma topológica del tablero (cuadrada por defecto). No cambia ninguna
+  /// regla de juego; la UI la usa para elegir cómo dibujar las celdas.
+  final TopologyKind topologyKind;
+
   final IBoardGraph _graph;
 
   final Map<String, Arrow> _arrows;
@@ -52,6 +57,7 @@ class Board {
     required Map<CellId, String> occupancy,
     Lives? lives,
     this.timeLimitSeconds,
+    this.topologyKind = TopologyKind.square,
   })  : _graph = graph,
         _arrows = Map.from(arrows),
         _occupancy = Map.from(occupancy),

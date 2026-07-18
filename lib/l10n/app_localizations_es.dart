@@ -136,6 +136,19 @@ class AppLocalizationsEs extends AppLocalizations {
   }
 
   @override
+  String get hexModeButton => 'Modo Hexagonal';
+
+  @override
+  String get hexModeTitle => 'Modo Hexagonal';
+
+  @override
+  String get hexModeSubtitle =>
+      'Tableros de panal: las flechas escapan en 6 direcciones.';
+
+  @override
+  String get hexComingSoon => 'Próximamente';
+
+  @override
   String get accountTooltip => 'Cuenta';
 
   @override

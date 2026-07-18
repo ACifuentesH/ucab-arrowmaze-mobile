@@ -22,6 +22,7 @@ import 'package:arrow_maze/application/proxies/use_case_logger_proxy.dart';
 import 'package:arrow_maze/application/services/session_cleanup.dart';
 import 'package:arrow_maze/application/use_cases/complete_level_use_case.dart';
 import 'package:arrow_maze/application/use_cases/generate_level_use_case.dart';
+import 'package:arrow_maze/application/use_cases/get_hex_level_selection_use_case.dart';
 import 'package:arrow_maze/application/use_cases/get_level_catalog_use_case.dart';
 import 'package:arrow_maze/application/use_cases/get_level_selection_use_case.dart';
 import 'package:arrow_maze/application/use_cases/i_remove_arrow_use_case.dart';
@@ -51,6 +52,7 @@ import 'package:arrow_maze/infrastructure/catalog/asset_level_catalog_service.da
 import 'package:arrow_maze/infrastructure/catalog/backend_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/composite_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/generated_level_catalog_service.dart';
+import 'package:arrow_maze/infrastructure/catalog/hex_asset_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/catalog/remote_first_level_catalog_service.dart';
 import 'package:arrow_maze/infrastructure/repositories/asset_json_level_repository.dart';
 import 'package:arrow_maze/infrastructure/repositories/chained_level_repository.dart';
@@ -71,6 +73,7 @@ import 'package:arrow_maze/presentation/view_models/game_state.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/generate_level_state.dart';
 import 'package:arrow_maze/presentation/view_models/leaderboard/leaderboard_view_model.dart';
+import 'package:arrow_maze/presentation/view_models/hex_level_select_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_state.dart';
 import 'package:arrow_maze/presentation/view_models/level_select_view_model.dart';
 import 'package:arrow_maze/presentation/view_models/survival/survival_state.dart';
@@ -154,6 +157,12 @@ final levelCatalogServiceProvider = Provider<ILevelCatalogService>(
   ]),
 );
 
+// Catálogo AISLADO del modo hexagonal (assets/levels/hex_manifest.json). No se
+// mezcla con la campaña cuadrada: cada modo tiene su propia lista y progresión.
+final hexLevelCatalogServiceProvider = Provider<ILevelCatalogService>(
+  (_) => const HexAssetLevelCatalogService(),
+);
+
 // --- Aplicacion: casos de uso remotos (auth + leaderboard + progress-sync) ---
 
 final commandInvokerProvider = Provider<CommandInvoker>(
@@ -196,6 +205,14 @@ final completeLevelUseCaseProvider = Provider<CompleteLevelUseCase>(
 final getLevelSelectionUseCaseProvider = Provider<GetLevelSelectionUseCase>(
   (ref) => GetLevelSelectionUseCase(
     catalog: ref.read(levelCatalogServiceProvider),
+    progress: ref.read(playerProgressRepositoryProvider),
+  ),
+);
+
+final getHexLevelSelectionUseCaseProvider =
+    Provider<GetHexLevelSelectionUseCase>(
+  (ref) => GetHexLevelSelectionUseCase(
+    catalog: ref.read(hexLevelCatalogServiceProvider),
     progress: ref.read(playerProgressRepositoryProvider),
   ),
 );
@@ -414,6 +431,15 @@ final levelSelectViewModelProvider =
     StateNotifierProvider<LevelSelectViewModel, LevelSelectState>(
       (ref) => LevelSelectViewModel(
         getSelection: ref.read(getLevelSelectionUseCaseProvider),
+      ),
+    );
+
+// --- HexLevelSelectViewModel (modo hexagonal, sin pantalla propia todavía) ---
+
+final hexLevelSelectViewModelProvider =
+    StateNotifierProvider<HexLevelSelectViewModel, LevelSelectState>(
+      (ref) => HexLevelSelectViewModel(
+        getSelection: ref.read(getHexLevelSelectionUseCaseProvider),
       ),
     );
 
