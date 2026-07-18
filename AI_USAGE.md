@@ -553,6 +553,47 @@
 
 ---
 
+### Entry 027 — feature/hex-core: topología hexagonal (pointy-top, odd-r) en dominio y aplicación
+
+**Task:** Sentar el núcleo del modo hexagonal sin tocar UI: nueva `HexGridTopology` (6 puertos, offset odd-r) y `HexArrowFactory` como segunda implementación de las abstracciones ya previstas (`ITopologyStrategy`, `IArrowFactory`, `Direction` genérica), discriminadas por un nuevo VO `TopologyKind` que viaja en el JSON del nivel (`topology: 'hex'`, default square).
+
+**Prompt (paraphrase):** "Implementa `TopologyKind`, `HexGridTopology` (tabla odd-r de 6 vecinos por paridad de fila), `HexArrowFactory` (total=6, delta contra la tabla), propaga `topologyKind` a `Board`/`LevelDefinition`/`LevelPreview`, haz que `LevelBuilder` seleccione topología+fábrica según la definición y reemplaza la validación manhattan hardcodeada por adyacencia contra el grafo ya construido. Tests AAA con Mothers/Testing APIs; la suite existente y los 15 niveles de campaña deben seguir verdes."
+
+**Result obtained:**
+
+- `TopologyKind` (VO): `parse('hex')` → hex; null o cualquier otro valor → square (retro-compatibilidad total: ningún JSON existente declara el campo).
+- `HexGridTopology`: tabla odd-r documentada en el docstring como fuente de verdad (6 índices horarios NE,E,SE,SW,W,NW; deltas distintos para fila par e impar). `neighborOffset` estática y pura, compartida con la fábrica — una sola definición de la geometría.
+- `HexArrowFactory`: resuelve el delta del último segmento contra las 6 direcciones usando la paridad de la fila origen; delta no hexagonal → `ArgumentError`.
+- `LevelBuilder`: selección automática (square→`SquareGridTopology`+`ArrowFactory`, hex→`HexGridTopology`+`HexArrowFactory`) con los parámetros del constructor como overrides opcionales para tests. La validación de adyacencia dejó de parsear ids con aritmética manhattan: ahora pregunta al grafo construido si alguna dirección permitida conecta cada par consecutivo — agnóstica a la forma, cero duplicación de geometría.
+- `Board.topologyKind`, `LevelDefinition.topology` (fromJson/fromBackendJson/toJson — solo se emite cuando ≠ square, byte a byte idéntico para niveles cuadrados) y `LevelPreview.topology` propagados; barrel `domain.dart` actualizado.
+- **Tests: 30 nuevos** (parse del VO; las 12 combinaciones de la tabla en topología y otras 12 en fábrica; bordes y hueco en medio del tablero; builder hex feliz con grafo y direcciones verificados; par no-adyacente rechazado por el grafo; nivel sin campo `topology` sigue cuadrado). Suite completa **291/291**; `flutter analyze` 69 issues, exactamente los mismos 69 del baseline (cero nuevos); los 15 niveles de `assets/levels` siguen construyendo y resolviéndose (test de campaña existente, intacto).
+
+**Team modifications:** Pendiente de revisión.
+
+**Lessons learned:** La inversión previa en abstracciones (`Direction` index/total, `ITopologyStrategy`, `IArrowFactory`) pagó exactamente como prometía: el modo hex entró sin tocar una sola regla de juego ni un test existente. El único código "cuadrado" escondido fuera de su Strategy era la validación manhattan del builder — reemplazarla por una pregunta al grafo eliminó la última fuga de geometría. Riesgo conocido: la numeración de estas entradas (027) puede colisionar con ramas paralelas que también añadan la suya; se resuelve renumerando en el merge.
+
+---
+
+### Entry 028 — feature/hex-board-rendering: geometría de tablero abstracta y render hexagonal (pointy-top, odd-r)
+
+**Task:** Extraer TODA la matemática de píxeles del `BoardPainter`/`BoardView` (que hardcodeaba la cuadrícula cuadrada) a una abstracción `IBoardGeometry`, e implementar la geometría hexagonal, sin cambiar ni un píxel del render cuadrado. Fase 2A del modo hex: el núcleo de dominio (Entry 027) ya distingue `TopologyKind.square`/`hex`; ahora la capa de presentación lo dibuja.
+
+**Prompt (paraphrase):** "Crea `IBoardGeometry` (cellScaleFor, boardSize, cellCenter, cellOutline, directionVector unitario, stepDistance, hitTest), un `SquareBoardGeometry` que reproduzca 1:1 el comportamiento actual, y un `HexBoardGeometry` pointy-top odd-r con las fórmulas dadas (centro, tamaño, outline de 6 vértices, 6 vectores unitarios, paso √3·s, hit-test Voronoi reutilizando `HexGridTopology.neighborOffset`). Refactoriza el painter para delegar en la geometría (fondo, dots, cuerpos, punta V, camino extendido del escape) y la vista para elegir geometría según `board.topologyKind`. Tests: regresión cuadrada con valores derivados a mano, propiedades hex (offset de paridad, unitarios, paso = distancia real, hit-test), y un widget test de `BoardView` hex real; la suite existente sin tocar."
+
+**Result obtained:**
+
+- `board_geometry.dart`: interfaz `IBoardGeometry` + `SquareBoardGeometry`. La cuadrada reproduce exactamente la matemática vieja: escala `min(w/cols, h/rows)`, centros `((c+0.5)·cs, (r+0.5)·cs)`, outline `Rect.fromLTWH`, vectores N/E/S/O, `stepDistance = cs`, hit-test por división entera con rango. Igualdad por tipo (sin estado) para no disparar repintados espurios.
+- `hex_board_geometry.dart`: `HexBoardGeometry` pointy-top odd-r con `cell = circumradio s`. `cellScaleFor` despeja `s` de las dos fórmulas del tamaño y toma el mínimo; `boardSize`/`cellCenter`/`cellOutline` (polígono de 6 vértices a `60°·i−30°`); 6 vectores unitarios independientes de la paridad (el offset odd-r vive en el centro); `stepDistance = √3·s`; `hitTest` estima fila/columna y elige entre la candidata y sus 6 vecinas (vía `HexGridTopology.neighborOffset`, sin duplicar la tabla) el centro más cercano — Voronoi hexagonal —, null si supera un circumradio o cae fuera de rango.
+- `board_painter.dart`: recibe `IBoardGeometry` por constructor y delega fondo (`cellOutline`→`addPath`), dots/cuerpos (`cellCenter`), punta V (`directionVector` + perpendicular) y camino extendido del escape (`stepDistance` en vez de sumar `cs`). La escala de celda se obtiene de `cellScaleFor(size...)`, que para el cuadrado equivale byte a byte al viejo `size.width/cols`. `shouldRepaint` considera el cambio de geometría. La lógica de animación (avance, fade del 30 %, shake) intacta.
+- `board_view.dart`: elige `SquareBoardGeometry`/`HexBoardGeometry` según `board.topologyKind`; `cellSize` vía `cellScaleFor`, `SizedBox` vía `boardSize`, tap vía `hitTest`. Animaciones y `didUpdateWidget` sin cambios.
+- **Tests: 20 nuevos.** Regresión cuadrada (10 casos: escala, tamaño, centros, outline, direcciones, paso, hit dentro/fuera) con constantes derivadas a mano — garantiza render pixel-idéntico. Propiedades hex (offset de media celda en filas impares, 6 unitarios, `stepDistance` = distancia real centro-a-centro en las 6 direcciones para orígenes par e impar, roundtrip tamaño↔escala, hit-test en centro exacto, cerca de frontera y fuera→null). Widget test de `BoardView` sobre un `Board` hex real (`LevelBuilder` + `LevelDefinition` con `topology: hex`): render sin excepciones, tap en celda de flecha dispara `onTapArrow('h1')`, tap en celda vacía no dispara. Suite completa **311/311**; `flutter analyze` **69 issues**, los mismos 69 del baseline (cero nuevos). Los widget tests cuadrados existentes pasan sin modificación.
+
+**Team modifications:** Pendiente de revisión.
+
+**Lessons learned:** El render cuadrado no tenía "una" fórmula de escala sino dos acopladas silenciosamente: el painter usaba `size.width/cols` y la vista `min(w/cols, h/rows)`, iguales solo porque el `SizedBox` se dimensionaba con esa misma celda. Al abstraer, `cellScaleFor(boardSize)` recupera exactamente la escala en ambas topologías — la propiedad "el tamaño reservado y la escala son inversas" es la que hace el refactor pixel-neutral y la que conviene fijar en un test (roundtrip). La segunda lección: no reimplementar la vecindad hex en la capa de UI; el hit-test Voronoi reusa `HexGridTopology.neighborOffset`, de modo que la geometría de píxeles y la de grafo comparten una única fuente de verdad de la topología odd-r.
+
+---
+
 ## Critical Evaluation
 
 - **Approximate share of AI-assisted code:** ~85% of the lines in this repository were written with AI assistance, under team-defined architecture, contracts and review. All AI-generated code is covered by the test suite.
