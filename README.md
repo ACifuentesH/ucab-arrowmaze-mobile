@@ -1,4 +1,4 @@
-# 🧩 Arrow Maze — Escape Puzzle · Cliente Flutter
+# Arrow Maze — Escape Puzzle · Cliente Flutter
 
 [![CI](https://github.com/ACifuentesH/ucab-arrowmaze-mobile/actions/workflows/ci.yml/badge.svg)](https://github.com/ACifuentesH/ucab-arrowmaze-mobile/actions/workflows/ci.yml)
 ![Flutter](https://img.shields.io/badge/Flutter-3.44.2-02569B?logo=flutter&logoColor=white)
@@ -54,16 +54,16 @@ Proyecto semestral de Desarrollo de Software (UCAB). Este repo es el **cliente F
 
 | Funcionalidad | Descripción | Dónde vive |
 |---|---|---|
-| 🗺️ **Campaña de 15 niveles** | Progresión con desbloqueo secuencial, estrellas (1–3) y mejor puntuación por nivel. Tableros con formas reconocibles (rombo, torre, corazón…) de hasta 220 celdas. | `assets/levels/` + backend |
-| 🤖 **Generador de niveles con IA** | El usuario describe una forma libre ("un gato", "una nave espacial"), un LLM dibuja la silueta y un algoritmo determinista la cubre de flechas **siempre resolubles**. | `GenerateLevelScreen` |
-| 🔥 **Modo Supervivencia** | Contrarreloj de 120s: tableros aleatorios encadenados, cuenta de tableros resueltos y leaderboard global propio. | `SurvivalGameScreen` |
-| 👤 **Autenticación JWT** | Registro/login contra el backend, restauración de sesión al arrancar, y **modo invitado** completo (el juego nunca exige cuenta). | `LoginScreen`, `RegisterScreen` |
-| ☁️ **Sincronización de progreso** | Bidireccional: al autenticar se descarga el progreso remoto (pull); al completar nivel se sube (push). Fallos de red jamás rompen la partida — el progreso local es la red de seguridad. | `ProgressSyncCoordinator` |
-| 🏆 **Leaderboards** | Por nivel (top-10 con caché TTL de 30s) y de supervivencia (mejor corrida por jugador). | `LeaderboardScreen` |
-| ↩️ **Deshacer** | Undo real de movimientos vía patrón Command. | `CommandInvoker` |
-| 🌐 **i18n** | Español e inglés, conmutables en caliente desde Ajustes. | `lib/l10n/` |
-| 🔊 **Audio** | Música ambiental + 5 efectos sintetizados proceduralmente (sin assets de terceros), con mute persistente. | `AudioService` |
-| 📴 **Offline-first** | Sin red: campaña bundleada, progreso local, niveles generados guardados en el dispositivo. Con red: el backend manda. | `RemoteFirstLevelCatalogService` |
+|  **Campaña de 15 niveles** | Progresión con desbloqueo secuencial, estrellas (1–3) y mejor puntuación por nivel. Tableros con formas reconocibles (rombo, torre, corazón…) de hasta 220 celdas. | `assets/levels/` + backend |
+|  **Generador de niveles con IA** | El usuario describe una forma libre ("un gato", "una nave espacial"), un LLM dibuja la silueta y un algoritmo determinista la cubre de flechas **siempre resolubles**. | `GenerateLevelScreen` |
+|  **Modo Supervivencia** | Contrarreloj de 120s: tableros aleatorios encadenados, cuenta de tableros resueltos y leaderboard global propio. | `SurvivalGameScreen` |
+|  **Autenticación JWT** | Registro/login contra el backend, restauración de sesión al arrancar, y **modo invitado** completo (el juego nunca exige cuenta). | `LoginScreen`, `RegisterScreen` |
+|  **Sincronización de progreso** | Bidireccional: al autenticar se descarga el progreso remoto (pull); al completar nivel se sube (push). Fallos de red jamás rompen la partida — el progreso local es la red de seguridad. | `ProgressSyncCoordinator` |
+|  **Leaderboards** | Por nivel (top-10 con caché TTL de 30s) y de supervivencia (mejor corrida por jugador). | `LeaderboardScreen` |
+|  **Deshacer** | Undo real de movimientos vía patrón Command. | `CommandInvoker` |
+|  **i18n** | Español e inglés, conmutables en caliente desde Ajustes. | `lib/l10n/` |
+|  **Audio** | Música ambiental + 5 efectos sintetizados proceduralmente (sin assets de terceros), con mute persistente. | `AudioService` |
+|  **Offline-first** | Sin red: campaña bundleada, progreso local, niveles generados guardados en el dispositivo. Con red: el backend manda. | `RemoteFirstLevelCatalogService` |
 
 ## Cómo ejecutar
 
