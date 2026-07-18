@@ -669,6 +669,8 @@
 
 **Lessons learned:** Los tests de resolubilidad y de widgets no habrían detectado ninguno de los tres defectos: son de gusto visual (el hueco) y de composición de layout (colisión de dos elementos que individualmente están bien posicionados). Correr la app de verdad después de integrar las fases — no solo `flutter test` en verde — fue lo que expuso los tres problemas en un solo intento de juego. Ampliar el barrido de semillas (300→1500) para recuperar una dificultad equivalente tras cambiar la restricción de forma confirma que el generador es sensible a la silueta: no toda semilla-ganadora en un hexágono con hueco gana también en uno macizo.
 
+**Ver también:** el relato completo de esta iteración — incluyendo la sesión de subagente detenida por el usuario a mitad de la regeneración, cómo el orquestador reaprovechó el script del generador desde el scratchpad compartido en vez de lanzar un agente nuevo, y el checkpoint de integración local que precedió a este playtest (merge de las 3 ramas previas en una rama local desechable, con un conflicto real de numeración en `AI_USAGE.md` que el equipo terminó resolviendo por su cuenta al mergear directo en GitHub) — vive en `AI_USAGE_HEX.md`, entradas H-006 y H-007.
+
 ---
 
 ## Critical Evaluation
