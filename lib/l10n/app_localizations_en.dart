@@ -136,6 +136,16 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get hexModeButton => 'Hexagonal Mode';
+
+  @override
+  String get hexModeTitle => 'Hexagonal Mode';
+
+  @override
+  String get hexModeSubtitle =>
+      'Honeycomb boards: arrows escape through 6 directions.';
+
+  @override
   String get accountTooltip => 'Account';
 
   @override

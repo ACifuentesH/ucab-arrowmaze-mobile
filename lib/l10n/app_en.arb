@@ -171,6 +171,18 @@
       }
     }
   },
+  "hexModeButton": "Hexagonal Mode",
+  "@hexModeButton": {
+    "description": "Level select button below the creative button that opens the hexagonal mode window"
+  },
+  "hexModeTitle": "Hexagonal Mode",
+  "@hexModeTitle": {
+    "description": "Title of the hexagonal mode level select screen"
+  },
+  "hexModeSubtitle": "Honeycomb boards: arrows escape through 6 directions.",
+  "@hexModeSubtitle": {
+    "description": "Short note explaining the hexagonal mechanic (arrows have 6 exit directions)"
+  },
   "accountTooltip": "Account",
   "@accountTooltip": {
     "description": "Tooltip of the account icon on the home screen"

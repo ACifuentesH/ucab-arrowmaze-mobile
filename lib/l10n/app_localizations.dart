@@ -326,6 +326,24 @@ abstract class AppLocalizations {
   /// **'{count} arrows · {difficulty}'**
   String levelMeta(int count, String difficulty);
 
+  /// Level select button below the creative button that opens the hexagonal mode window
+  ///
+  /// In en, this message translates to:
+  /// **'Hexagonal Mode'**
+  String get hexModeButton;
+
+  /// Title of the hexagonal mode level select screen
+  ///
+  /// In en, this message translates to:
+  /// **'Hexagonal Mode'**
+  String get hexModeTitle;
+
+  /// Short note explaining the hexagonal mechanic (arrows have 6 exit directions)
+  ///
+  /// In en, this message translates to:
+  /// **'Honeycomb boards: arrows escape through 6 directions.'**
+  String get hexModeSubtitle;
+
   /// Tooltip of the account icon on the home screen
   ///
   /// In en, this message translates to:
